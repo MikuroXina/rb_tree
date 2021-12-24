@@ -29,6 +29,7 @@ impl std::ops::Not for ChildIndex {
 
 struct Node<K, V> {
     parent: Ptr<Node<K, V>>,
+    #[allow(clippy::type_complexity)]
     children: (Ptr<Node<K, V>>, Ptr<Node<K, V>>),
     color: Color,
     key: K,
