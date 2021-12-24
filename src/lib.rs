@@ -44,8 +44,31 @@ impl<K, V> Node<K, V> {
         }
     }
 
+    fn is_red(this: NonNull<Self>) -> bool {
+        unsafe { this.as_ref() }.color == Color::Red
+    }
+
+    fn is_black(this: NonNull<Self>) -> bool {
+        !Self::is_red(this)
+    }
+
+    fn set_color(mut this: NonNull<Self>, color: Color) {
+        unsafe { this.as_mut() }.color = color;
+    }
+
     fn parent(this: NonNull<Self>) -> Ptr<Self> {
         unsafe { this.as_ref() }.parent
+    }
+
+    fn grandparent(this: NonNull<Self>) -> Ptr<Self> {
+        let parent = Self::parent(this)?;
+        unsafe { parent.as_ref() }.parent
+    }
+
+    fn uncle(this: NonNull<Self>) -> Ptr<Self> {
+        let index = Self::index_on_parent(this)?;
+        let parent = Self::parent(this).unwrap();
+        Self::child(parent, !index)
     }
 
     fn child(this: NonNull<Self>, idx: ChildIndex) -> Ptr<Self> {
@@ -137,6 +160,80 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             }
         }
         pivot
+    }
+
+    fn insert_node(&mut self, mut new_node: Box<Node<K, V>>, target: Ptr<Node<K, V>>) {
+        if target.is_none() {
+            self.root = NonNull::new(Box::into_raw(new_node));
+            return;
+        }
+        new_node.color = Color::Red;
+        new_node.parent = target;
+        let mut new_node = {
+            let mut target = target.unwrap();
+            let idx = if new_node.key < unsafe { target.as_ref() }.key {
+                ChildIndex::Left
+            } else {
+                ChildIndex::Right
+            };
+            let new_node = NonNull::new(Box::into_raw(new_node));
+            {
+                let target = unsafe { target.as_mut() };
+                *target.child_mut(idx) = new_node;
+            }
+            new_node.unwrap()
+        };
+
+        // re-balance
+        enum Case {
+            ParentIsBlack,
+            NoGrandparent,
+            UncleIsRed,
+            InnerGrandchild,
+            OuterGrandchild,
+        }
+        let parent = Node::parent(new_node).unwrap();
+        let mut state = if Node::is_black(parent) {
+            Case::ParentIsBlack
+        } else if Node::parent(parent).is_none() {
+            Case::NoGrandparent
+        } else if Node::uncle(new_node).map(Node::is_red).unwrap_or(false) {
+            Case::UncleIsRed
+        } else if Node::index_on_parent(parent) != Node::index_on_parent(new_node) {
+            Case::InnerGrandchild
+        } else {
+            Case::OuterGrandchild
+        };
+        while let Some(parent) = Node::parent(new_node) {
+            match state {
+                Case::ParentIsBlack => return,
+                Case::NoGrandparent => {
+                    Node::set_color(parent, Color::Black);
+                    return;
+                }
+                Case::UncleIsRed => {
+                    Node::set_color(parent, Color::Black);
+                    Node::set_color(Node::uncle(new_node).unwrap(), Color::Black);
+                    let grandparent = Node::grandparent(new_node).unwrap();
+                    Node::set_color(grandparent, Color::Red);
+                    new_node = grandparent;
+                }
+                Case::InnerGrandchild => {
+                    self.rotate(parent, Node::index_on_parent(new_node).unwrap());
+                    new_node = parent;
+                    state = Case::OuterGrandchild;
+                }
+                Case::OuterGrandchild => {
+                    self.rotate(
+                        Node::grandparent(new_node).unwrap(),
+                        Node::index_on_parent(new_node).unwrap(),
+                    );
+                    Node::set_color(parent, Color::Black);
+                    Node::set_color(Node::grandparent(new_node).unwrap(), Color::Red);
+                    return;
+                }
+            }
+        }
     }
 }
 
