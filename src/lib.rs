@@ -60,6 +60,10 @@ impl<K, V> Node<K, V> {
         unsafe { this.as_ref() }.parent
     }
 
+    fn set_parent(mut this: NonNull<Self>, new_parent: impl Into<Option<NonNull<Self>>>) {
+        unsafe { this.as_mut() }.parent = new_parent.into();
+    }
+
     fn grandparent(this: NonNull<Self>) -> Ptr<Self> {
         let parent = Self::parent(this)?;
         unsafe { parent.as_ref() }.parent
@@ -79,14 +83,15 @@ impl<K, V> Node<K, V> {
         }
     }
 
-    fn child_mut(&mut self, idx: ChildIndex) -> &mut Ptr<Self> {
+    fn set_child(mut this: NonNull<Self>, idx: ChildIndex, new_child: Ptr<Self>) {
+        let this = unsafe { this.as_mut() };
         match idx {
-            ChildIndex::Left => &mut self.children.0,
-            ChildIndex::Right => &mut self.children.1,
+            ChildIndex::Left => this.children.0 = new_child,
+            ChildIndex::Right => this.children.1 = new_child,
         }
     }
 
-    fn into_element(self: Box<Self>) -> (K, V) {
+    fn into_element(self) -> (K, V) {
         (self.key, self.value)
     }
 
@@ -136,21 +141,18 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         }
         {
             // update `node`'s child and parent
-            let node = unsafe { node.as_mut() };
-            *node.child_mut(pivot_idx) = be_moved;
-            node.parent = Some(pivot);
+            Node::set_child(node, pivot_idx, be_moved);
+            Node::set_parent(node, pivot);
         }
         {
             // update `pivot`'s child and parent
-            let pivot = unsafe { pivot.as_mut() };
-            *pivot.child_mut(!pivot_idx) = Some(node);
-            pivot.parent = parent;
+            Node::set_child(pivot, !pivot_idx, Some(node));
+            Node::set_parent(pivot, parent);
         }
         match Node::index_on_parent(node) {
             // update `parent`'s child
             Some(idx) => {
-                let mut parent = parent.unwrap();
-                *unsafe { parent.as_mut() }.child_mut(idx) = Some(pivot);
+                Node::set_child(parent.unwrap(), idx, Some(pivot));
             }
             None => {
                 self.root = Some(pivot);
@@ -175,8 +177,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             };
             let new_node = NonNull::new(Box::into_raw(new_node));
             {
-                let target = unsafe { target.as_mut() };
-                *target.child_mut(idx) = new_node;
+                Node::set_child(target, idx, new_node);
             }
             new_node.unwrap()
         };
