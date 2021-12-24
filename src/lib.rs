@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::{marker::PhantomData, ptr::NonNull};
 
 type Ptr<T> = Option<NonNull<T>>;
