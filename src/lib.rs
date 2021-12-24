@@ -60,10 +60,6 @@ impl<K, V> Node<K, V> {
         unsafe { this.as_ref() }.parent
     }
 
-    fn set_parent(mut this: NonNull<Self>, new_parent: impl Into<Option<NonNull<Self>>>) {
-        unsafe { this.as_mut() }.parent = new_parent.into();
-    }
-
     fn grandparent(this: NonNull<Self>) -> Ptr<Self> {
         let parent = Self::parent(this)?;
         unsafe { parent.as_ref() }.parent
@@ -103,6 +99,9 @@ impl<K, V> Node<K, V> {
     }
 
     fn set_child(mut this: NonNull<Self>, idx: ChildIndex, new_child: Ptr<Self>) {
+        if let Some(mut child) = new_child {
+            unsafe { child.as_mut() }.parent = Some(this);
+        }
         let this = unsafe { this.as_mut() };
         match idx {
             ChildIndex::Left => this.children.0 = new_child,
@@ -133,11 +132,7 @@ pub struct RedBlackTree<K, V> {
 
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn rotate(
-        &mut self,
-        mut node: NonNull<Node<K, V>>,
-        pivot_idx: ChildIndex,
-    ) -> NonNull<Node<K, V>> {
+    fn rotate(&mut self, node: NonNull<Node<K, V>>, pivot_idx: ChildIndex) -> NonNull<Node<K, V>> {
         //           [node]
         //            /   \
         //        [pivot] [be_fallen]
@@ -150,24 +145,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         //             /   \
         //     [be_moved] [be_fallen]
         let parent = Node::parent(node);
-        let mut pivot = Node::child(node, pivot_idx).expect("pivot must be found");
+        let pivot = Node::child(node, pivot_idx).expect("pivot must be found");
         let be_moved = Node::child(pivot, !pivot_idx);
 
-        if let Some(mut be_moved) = be_moved {
-            // update `be_moved`'s parent
-            let be_moved = unsafe { be_moved.as_mut() };
-            be_moved.parent = Some(node);
-        }
-        {
-            // update `node`'s child and parent
-            Node::set_child(node, pivot_idx, be_moved);
-            Node::set_parent(node, pivot);
-        }
-        {
-            // update `pivot`'s child and parent
-            Node::set_child(pivot, !pivot_idx, Some(node));
-            Node::set_parent(pivot, parent);
-        }
         match Node::index_on_parent(node) {
             // update `parent`'s child
             Some(idx) => {
@@ -177,6 +157,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 self.root = Some(pivot);
             }
         }
+        // update `pivot`'s child
+        Node::set_child(pivot, !pivot_idx, Some(node));
+        // update `node`'s child
+        Node::set_child(node, pivot_idx, be_moved);
         pivot
     }
 
