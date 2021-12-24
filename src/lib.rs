@@ -206,7 +206,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 return;
             }
             // the parent is red and the grandparent exists
-            if Node::uncle(new_node).map(Node::is_red).unwrap_or(false) {
+            if Node::uncle(new_node).map_or(false, Node::is_red) {
                 // if the parent and the uncle is red, they will be black and the grandparent will be red.
                 Node::set_color(parent, Color::Black);
                 Node::set_color(Node::uncle(new_node).unwrap(), Color::Black);
