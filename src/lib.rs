@@ -70,9 +70,28 @@ impl<K, V> Node<K, V> {
     }
 
     fn uncle(this: NonNull<Self>) -> Ptr<Self> {
+        let parent = Self::parent(this)?;
+        let index = Self::index_on_parent(parent)?;
+        let grandparent = Self::grandparent(this)?;
+        Self::child(grandparent, !index)
+    }
+
+    fn sibling(this: NonNull<Self>) -> Ptr<Self> {
         let index = Self::index_on_parent(this)?;
-        let parent = Self::parent(this).unwrap();
+        let parent = Self::parent(this)?;
         Self::child(parent, !index)
+    }
+
+    fn close_nephew(this: NonNull<Self>) -> Ptr<Self> {
+        let index = Self::index_on_parent(this)?;
+        let sibling = Self::sibling(this)?;
+        Self::child(sibling, index)
+    }
+
+    fn distant_nephew(this: NonNull<Self>) -> Ptr<Self> {
+        let index = Self::index_on_parent(this)?;
+        let sibling = Self::sibling(this)?;
+        Self::child(sibling, !index)
     }
 
     fn child(this: NonNull<Self>, idx: ChildIndex) -> Ptr<Self> {
