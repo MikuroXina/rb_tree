@@ -91,16 +91,13 @@ impl<K, V> Node<K, V> {
     }
 
     fn index_on_parent(this: NonNull<Self>) -> Option<ChildIndex> {
-        unsafe { this.as_ref() }
-            .parent
-            .map(|parent| unsafe { parent.as_ref() })
-            .map(|parent| {
-                if parent.children.0 == Some(this) {
-                    ChildIndex::Left
-                } else {
-                    ChildIndex::Right
-                }
-            })
+        let parent = Self::parent(this)?;
+        let child = unsafe { parent.as_ref() }.children.0?;
+        Some(if child == this {
+            ChildIndex::Left
+        } else {
+            ChildIndex::Right
+        })
     }
 }
 
