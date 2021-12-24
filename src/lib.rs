@@ -124,6 +124,16 @@ impl<K, V> Node<K, V> {
     }
 }
 
+impl<K: Ord, V> Node<K, V> {
+    fn which_to_insert(new_node: NonNull<Self>, target: NonNull<Self>) -> ChildIndex {
+        if unsafe { new_node.as_ref() }.key < unsafe { target.as_ref() }.key {
+            ChildIndex::Left
+        } else {
+            ChildIndex::Right
+        }
+    }
+}
+
 pub struct RedBlackTree<K, V> {
     root: Ptr<Node<K, V>>,
     len: usize,
@@ -165,25 +175,16 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 
     fn insert_node(&mut self, mut new_node: Box<Node<K, V>>, target: Ptr<Node<K, V>>) {
+        new_node.color = Color::Red;
+        let ptr = NonNull::new(Box::into_raw(new_node)).unwrap();
         if target.is_none() {
-            self.root = NonNull::new(Box::into_raw(new_node));
+            self.root = Some(ptr);
             return;
         }
-        new_node.color = Color::Red;
-        new_node.parent = target;
-        let mut new_node = {
-            let mut target = target.unwrap();
-            let idx = if new_node.key < unsafe { target.as_ref() }.key {
-                ChildIndex::Left
-            } else {
-                ChildIndex::Right
-            };
-            let new_node = NonNull::new(Box::into_raw(new_node));
-            {
-                Node::set_child(target, idx, new_node);
-            }
-            new_node.unwrap()
-        };
+        let target = target.unwrap();
+        let idx = Node::which_to_insert(ptr, target);
+        Node::set_child(target, idx, Some(ptr));
+        let mut new_node = ptr;
 
         // re-balance
         enum Case {
