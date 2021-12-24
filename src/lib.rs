@@ -52,6 +52,10 @@ impl<K, V> Node<K, V> {
         !Self::is_red(this)
     }
 
+    fn color(this: NonNull<Self>) -> Color {
+        unsafe { this.as_ref() }.color
+    }
+
     fn set_color(mut this: NonNull<Self>, color: Color) {
         unsafe { this.as_mut() }.color = color;
     }
@@ -187,54 +191,70 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         let mut new_node = ptr;
 
         // re-balance
-        enum Case {
-            ParentIsBlack,
-            NoGrandparent,
-            UncleIsRed,
-            InnerGrandchild,
-            OuterGrandchild,
-        }
-        let parent = Node::parent(new_node).unwrap();
-        let mut state = if Node::is_black(parent) {
-            Case::ParentIsBlack
-        } else if Node::parent(parent).is_none() {
-            Case::NoGrandparent
-        } else if Node::uncle(new_node).map(Node::is_red).unwrap_or(false) {
-            Case::UncleIsRed
-        } else if Node::index_on_parent(parent) != Node::index_on_parent(new_node) {
-            Case::InnerGrandchild
-        } else {
-            Case::OuterGrandchild
-        };
         while let Some(parent) = Node::parent(new_node) {
-            match state {
-                Case::ParentIsBlack => return,
-                Case::NoGrandparent => {
-                    Node::set_color(parent, Color::Black);
-                    return;
-                }
-                Case::UncleIsRed => {
-                    Node::set_color(parent, Color::Black);
-                    Node::set_color(Node::uncle(new_node).unwrap(), Color::Black);
-                    let grandparent = Node::grandparent(new_node).unwrap();
-                    Node::set_color(grandparent, Color::Red);
-                    new_node = grandparent;
-                }
-                Case::InnerGrandchild => {
-                    self.rotate(parent, Node::index_on_parent(new_node).unwrap());
-                    new_node = parent;
-                    state = Case::OuterGrandchild;
-                }
-                Case::OuterGrandchild => {
-                    self.rotate(
-                        Node::grandparent(new_node).unwrap(),
-                        Node::index_on_parent(new_node).unwrap(),
-                    );
-                    Node::set_color(parent, Color::Black);
-                    Node::set_color(Node::grandparent(new_node).unwrap(), Color::Red);
-                    return;
-                }
+            if Node::is_black(parent) {
+                // if the parent is black, the tree is well balanced.
+                return;
             }
+            // the parent is red
+            if Node::parent(parent).is_none() {
+                // if the parent is red and no grandparent exists, the root parent will be black.
+                Node::set_color(parent, Color::Black);
+                return;
+            }
+            // the parent is red and the grandparent exists
+            if Node::uncle(new_node).map(Node::is_red).unwrap_or(false) {
+                // if the parent and the uncle is red, they will be black and the grandparent will be red.
+                Node::set_color(parent, Color::Black);
+                Node::set_color(Node::uncle(new_node).unwrap(), Color::Black);
+                let grandparent = Node::grandparent(new_node).unwrap();
+                Node::set_color(grandparent, Color::Red);
+                // then nodes above the grandparent needs to re-balance.
+                new_node = grandparent;
+                continue;
+            }
+            // the parent is red and the uncle is black
+            if Node::index_on_parent(parent) != Node::index_on_parent(new_node) {
+                // if the nodes are connected:
+                //   [grandparent]  |  [grandparent]
+                //     /     \      |     /     \
+                // (parent) [uncle] | [uncle] (parent)
+                //      \           |           /
+                //    (new_node)    |      (new_node)
+                self.rotate(parent, Node::index_on_parent(new_node).unwrap());
+                // then rotated:
+                //   [grandparent]    |  [grandparent]
+                //     /     \        |     /     \
+                // (new_node) [uncle] | [uncle] (new_node)
+                //   /                |             \
+                // (parent)           |          (parent)
+                new_node = parent;
+            }
+            // the nodes are connected:
+            //   [grandparent]  |  [grandparent]
+            //     /     \      |     /     \
+            // (parent) [uncle] | [uncle] (parent)
+            //   /              |             \
+            // (new_node)       |          (new_node)
+            Node::set_color(parent, Color::Black);
+            Node::set_color(Node::grandparent(new_node).unwrap(), Color::Red);
+            // then colored:
+            //   (grandparent)  |  (grandparent)
+            //     /     \      |     /     \
+            // [parent] [uncle] | [uncle] [parent]
+            //   /              |             \
+            // (new_node)       |          (new_node)
+            self.rotate(
+                Node::grandparent(new_node).unwrap(),
+                Node::index_on_parent(new_node).unwrap(),
+            );
+            // finished:
+            //       [parent]           |          [parent]
+            //        /    \            |           /    \
+            // (new_node) (grandparent) | (grandparent) (new_node)
+            //                \         |      /
+            //              [uncle]     |   [uncle]
+            return;
         }
     }
 }
