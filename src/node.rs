@@ -1,6 +1,6 @@
 use crate::Ptr;
 
-use std::{marker::PhantomData, ptr::NonNull};
+use std::{borrow::Borrow, marker::PhantomData, ptr::NonNull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -69,15 +69,22 @@ impl<K, V> Node<K, V> {
     }
 }
 
-impl<'n, K, V> From<&'n NonNull<Node<K, V>>> for NodeRef<'n, K, V> {
-    fn from(ptr: &'n NonNull<Node<K, V>>) -> Self {
-        Self(*ptr, PhantomData)
+impl<'n, K, V> From<NonNull<Node<K, V>>> for NodeRef<'n, K, V> {
+    fn from(ptr: NonNull<Node<K, V>>) -> Self {
+        Self(ptr, PhantomData)
     }
 }
 
 impl<'n, K, V> NodeRef<'n, K, V> {
     pub fn as_raw(&self) -> NonNull<Node<K, V>> {
         self.0
+    }
+
+    pub fn key<Q>(&self) -> &Q
+    where
+        K: Borrow<Q>,
+    {
+        unsafe { self.0.as_ref() }.key.borrow()
     }
 
     pub fn is_red(&self) -> bool {
@@ -97,7 +104,7 @@ impl<'n, K, V> NodeRef<'n, K, V> {
     }
 
     pub fn parent(&self) -> Option<Self> {
-        unsafe { self.0.as_ref() }.parent.as_ref().map(|p| p.into())
+        unsafe { self.0.as_ref() }.parent.map(Into::into)
     }
 
     pub fn grandparent(&self) -> Option<Self> {
@@ -126,13 +133,21 @@ impl<'n, K, V> NodeRef<'n, K, V> {
         sibling.child(!index)
     }
 
+    pub fn children(&self) -> (Option<Self>, Option<Self>) {
+        let this = unsafe { self.0.as_ref() };
+        (
+            this.children.0.map(Into::into),
+            this.children.1.map(Into::into),
+        )
+    }
+
     pub fn child(&self, idx: ChildIndex) -> Option<Self> {
         let this = unsafe { self.0.as_ref() };
         match idx {
-            ChildIndex::Left => this.children.0.as_ref(),
-            ChildIndex::Right => this.children.1.as_ref(),
+            ChildIndex::Left => this.children.0,
+            ChildIndex::Right => this.children.1,
         }
-        .map(|p| p.into())
+        .map(Into::into)
     }
 
     pub fn set_child(&mut self, idx: ChildIndex, new_child: Option<Self>) {
@@ -158,8 +173,12 @@ impl<'n, K, V> NodeRef<'n, K, V> {
 }
 
 impl<'n, K: Ord, V> NodeRef<'n, K, V> {
-    pub fn which_to_insert(&self, new_node: &Node<K, V>) -> ChildIndex {
-        if new_node.key < unsafe { self.0.as_ref() }.key {
+    pub fn which_to_insert<Q>(&self, key: &Q) -> ChildIndex
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        if key < unsafe { self.0.as_ref() }.key.borrow() {
             ChildIndex::Left
         } else {
             ChildIndex::Right

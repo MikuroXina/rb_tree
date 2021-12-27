@@ -4,7 +4,7 @@ mod node;
 
 use node::{ChildIndex, Color, Node, NodeRef};
 
-use std::{marker::PhantomData, ptr::NonNull};
+use std::{borrow::Borrow, marker::PhantomData, ptr::NonNull};
 
 type Ptr<T> = Option<NonNull<T>>;
 
@@ -59,9 +59,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             return;
         }
         let mut target = target.unwrap();
-        let idx = target.which_to_insert(&new_node);
         let ptr = NonNull::new(Box::into_raw(new_node)).unwrap();
-        let mut new_node = (&ptr).into();
+        let mut new_node: NodeRef<K, V> = ptr.into();
+        let idx = target.which_to_insert(new_node.key());
         target.set_child(idx, Some(new_node));
 
         // re-balance
