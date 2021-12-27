@@ -285,7 +285,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
 impl<K, V> Drop for RedBlackTree<K, V> {
     fn drop(&mut self) {
-        todo!()
+        drop(unsafe { std::ptr::read(self) }.into_iter());
     }
 }
 
