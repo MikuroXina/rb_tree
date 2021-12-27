@@ -303,6 +303,15 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         None
     }
 
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        let found = self.search_node(key)?;
+        (found.key() == key).then(|| self.remove_node(found).1)
+    }
+
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
