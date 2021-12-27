@@ -2,6 +2,8 @@
 
 mod iter;
 mod node;
+#[cfg(test)]
+mod tests;
 
 pub use iter::IntoIter;
 
