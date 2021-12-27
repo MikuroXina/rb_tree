@@ -1,6 +1,6 @@
 use crate::Ptr;
 
-use std::{borrow::Borrow, marker::PhantomData, ptr::NonNull};
+use std::{borrow::Borrow, ptr::NonNull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -35,23 +35,23 @@ pub struct Node<K, V> {
 }
 
 #[derive(Debug)]
-pub struct NodeRef<'n, K, V>(NonNull<Node<K, V>>, PhantomData<&'n Node<K, V>>);
+pub struct NodeRef<K, V>(NonNull<Node<K, V>>);
 
-impl<'n, K, V> Clone for NodeRef<'n, K, V> {
+impl<K, V> Clone for NodeRef<K, V> {
     fn clone(&self) -> Self {
-        Self(self.0, PhantomData)
+        Self(self.0)
     }
 }
 
-impl<'n, K, V> Copy for NodeRef<'n, K, V> {}
+impl<K, V> Copy for NodeRef<K, V> {}
 
-impl<'n, K, V> PartialEq for NodeRef<'n, K, V> {
+impl<K, V> PartialEq for NodeRef<K, V> {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<'n, K, V> Eq for NodeRef<'n, K, V> {}
+impl<K, V> Eq for NodeRef<K, V> {}
 
 impl<K, V> Node<K, V> {
     pub fn new(parent: Option<NonNull<Self>>, key: K, value: V) -> Self {
@@ -69,13 +69,13 @@ impl<K, V> Node<K, V> {
     }
 }
 
-impl<'n, K, V> From<NonNull<Node<K, V>>> for NodeRef<'n, K, V> {
+impl<K, V> From<NonNull<Node<K, V>>> for NodeRef<K, V> {
     fn from(ptr: NonNull<Node<K, V>>) -> Self {
-        Self(ptr, PhantomData)
+        Self(ptr)
     }
 }
 
-impl<'n, K, V> NodeRef<'n, K, V> {
+impl<K, V> NodeRef<K, V> {
     pub fn as_raw(&self) -> NonNull<Node<K, V>> {
         self.0
     }
@@ -172,7 +172,7 @@ impl<'n, K, V> NodeRef<'n, K, V> {
     }
 }
 
-impl<'n, K: Ord, V> NodeRef<'n, K, V> {
+impl<K: Ord, V> NodeRef<K, V> {
     pub fn which_to_insert<Q>(&self, key: &Q) -> ChildIndex
     where
         K: Borrow<Q>,
