@@ -76,64 +76,73 @@ impl<K, V> From<NonNull<Node<K, V>>> for NodeRef<K, V> {
 }
 
 impl<K, V> NodeRef<K, V> {
-    pub fn as_raw(&self) -> NonNull<Node<K, V>> {
+    pub fn as_raw(self) -> NonNull<Node<K, V>> {
         self.0
     }
 
-    pub fn key<Q>(&self) -> &Q
+    pub fn key<'a, Q>(self) -> &'a Q
     where
-        K: Borrow<Q>,
+        K: Borrow<Q> + 'a,
+        V: 'a,
+        Q: ?Sized,
     {
         unsafe { self.0.as_ref() }.key.borrow()
     }
 
-    pub fn is_red(&self) -> bool {
+    pub fn value<'a>(self) -> &'a V
+    where
+        K: 'a,
+    {
+        &unsafe { self.0.as_ref() }.value
+    }
+
+    pub fn is_red(self) -> bool {
         unsafe { self.0.as_ref() }.color == Color::Red
     }
 
-    pub fn is_black(&self) -> bool {
+    pub fn is_black(self) -> bool {
         !self.is_red()
     }
 
-    pub fn color(&self) -> Color {
+    pub fn color(self) -> Color {
         unsafe { self.0.as_ref() }.color
     }
 
-    pub fn set_color(&mut self, color: Color) {
+    pub fn set_color(mut self, color: Color) {
         unsafe { self.0.as_mut() }.color = color;
     }
 
-    pub fn parent(&self) -> Option<Self> {
+    pub fn parent(self) -> Option<Self> {
         unsafe { self.0.as_ref() }.parent.map(Into::into)
     }
 
-    pub fn grandparent(&self) -> Option<Self> {
+    pub fn grandparent(self) -> Option<Self> {
         self.parent()?.parent()
     }
 
-    pub fn uncle(&self) -> Option<Self> {
+    pub fn uncle(self) -> Option<Self> {
         self.parent()?.sibling()
     }
 
-    pub fn sibling(&self) -> Option<Self> {
+    pub fn sibling(self) -> Option<Self> {
         let index = self.index_on_parent()?;
         let parent = self.parent()?;
         parent.child(!index)
     }
 
-    pub fn close_nephew(&self) -> Option<Self> {
+    pub fn close_nephew(self) -> Option<Self> {
         let index = self.index_on_parent()?;
         let sibling = self.sibling()?;
         sibling.child(index)
     }
 
-    pub fn distant_nephew(&self) -> Option<Self> {
+    pub fn distant_nephew(self) -> Option<Self> {
         let index = self.index_on_parent()?;
         let sibling = self.sibling()?;
         sibling.child(!index)
     }
 
-    pub fn children(&self) -> (Option<Self>, Option<Self>) {
+    pub fn children(self) -> (Option<Self>, Option<Self>) {
         let this = unsafe { self.0.as_ref() };
         (
             this.children.0.map(Into::into),
@@ -141,7 +150,7 @@ impl<K, V> NodeRef<K, V> {
         )
     }
 
-    pub fn child(&self, idx: ChildIndex) -> Option<Self> {
+    pub fn child(self, idx: ChildIndex) -> Option<Self> {
         let this = unsafe { self.0.as_ref() };
         match idx {
             ChildIndex::Left => this.children.0,
@@ -150,7 +159,7 @@ impl<K, V> NodeRef<K, V> {
         .map(Into::into)
     }
 
-    pub fn set_child(&mut self, idx: ChildIndex, new_child: Option<Self>) {
+    pub fn set_child(mut self, idx: ChildIndex, new_child: Option<Self>) {
         let this = unsafe { self.0.as_mut() };
         if let Some(mut child) = new_child {
             unsafe { child.0.as_mut() }.parent = Some(this.into());
@@ -161,10 +170,10 @@ impl<K, V> NodeRef<K, V> {
         }
     }
 
-    pub fn index_on_parent(&self) -> Option<ChildIndex> {
+    pub fn index_on_parent(self) -> Option<ChildIndex> {
         let parent = self.parent()?;
         let child = parent.child(ChildIndex::Left)?;
-        Some(if *self == child {
+        Some(if self == child {
             ChildIndex::Left
         } else {
             ChildIndex::Right
@@ -173,10 +182,10 @@ impl<K, V> NodeRef<K, V> {
 }
 
 impl<K: Ord, V> NodeRef<K, V> {
-    pub fn which_to_insert<Q>(&self, key: &Q) -> ChildIndex
+    pub fn which_to_insert<Q>(self, key: &Q) -> ChildIndex
     where
         K: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         if key < unsafe { self.0.as_ref() }.key.borrow() {
             ChildIndex::Left

@@ -16,7 +16,7 @@ pub struct RedBlackTree<K, V> {
 
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn rotate(&mut self, mut node: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
+    fn rotate(&mut self, node: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
         //           [node]
         //            /   \
         //        [pivot] [be_fallen]
@@ -29,7 +29,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         //             /   \
         //     [be_moved] [be_fallen]
         let parent = node.parent();
-        let mut pivot = node.child(pivot_idx).expect("pivot must be found");
+        let pivot = node.child(pivot_idx).expect("pivot must be found");
         let be_moved = pivot.child(!pivot_idx);
 
         match node.index_on_parent() {
@@ -54,14 +54,14 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             self.root = Some(ptr);
             return;
         }
-        let mut target = target.unwrap();
+        let target = target.unwrap();
         let ptr = NonNull::new(Box::into_raw(new_node)).unwrap();
         let mut new_node: NodeRef<K, V> = ptr.into();
         let idx = target.which_to_insert(new_node.key());
         target.set_child(idx, Some(new_node));
 
         // re-balance
-        while let Some(mut parent) = new_node.parent() {
+        while let Some(parent) = new_node.parent() {
             if parent.is_black() {
                 // if the parent is black, the tree is well balanced.
                 return;
@@ -77,7 +77,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 // if the parent and the uncle is red, they will be black and the grandparent will be red.
                 parent.set_color(Color::Black);
                 new_node.uncle().unwrap().set_color(Color::Black);
-                let mut grandparent = new_node.grandparent().unwrap();
+                let grandparent = new_node.grandparent().unwrap();
                 grandparent.set_color(Color::Red);
                 // then nodes above the grandparent needs to re-balance.
                 new_node = grandparent;
@@ -133,7 +133,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         }
 
         fn pop_then_promote<K, V>(node: NodeRef<K, V>, child: Option<NodeRef<K, V>>) -> (K, V) {
-            if let Some(mut parent) = node.parent() {
+            if let Some(parent) = node.parent() {
                 parent.set_child(node.index_on_parent().unwrap(), child);
             }
             unsafe { Box::from_raw(node.as_raw().as_ptr()) }.into_element()
@@ -166,8 +166,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
         // re-balance
         let mut node = node;
-        while let Some(mut parent) = node.parent() {
-            let mut sibling = node.sibling().unwrap();
+        while let Some(parent) = node.parent() {
+            let sibling = node.sibling().unwrap();
             let close_nephew = node.close_nephew();
             let distant_nephew = node.distant_nephew();
             if sibling.is_red() {
@@ -247,7 +247,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     fn search_node<Q>(&self, key: &Q) -> Option<NodeRef<K, V>>
     where
         K: Borrow<Q>,
-        Q: Ord,
+        Q: Ord + ?Sized,
     {
         let mut current = NodeRef::from(self.root?);
         loop {
