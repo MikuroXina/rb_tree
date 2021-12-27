@@ -302,4 +302,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         self.insert_node(new_node.into(), parent);
         None
     }
+
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.search_node(key).map(|n| n.value())
+    }
 }
