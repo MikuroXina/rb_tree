@@ -16,11 +16,7 @@ pub struct RedBlackTree<K, V> {
 
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn rotate<'n>(
-        &mut self,
-        mut node: NodeRef<'n, K, V>,
-        pivot_idx: ChildIndex,
-    ) -> NodeRef<'n, K, V> {
+    fn rotate(&mut self, mut node: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
         //           [node]
         //            /   \
         //        [pivot] [be_fallen]
@@ -290,7 +286,20 @@ impl<K, V> RedBlackTree<K, V> {
 }
 
 impl<K: Ord, V> RedBlackTree<K, V> {
-    pub fn insert(&mut self, key: K, value: V) -> Option<V> {
-        todo!()
+    pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
+        let found = self.search_node(&key);
+        if found.as_ref().map(|found| found.key().borrow()) == Some(&key) {
+            // replace
+            let found = found.unwrap();
+            let parent = found.parent();
+            let new_node = Node::new(parent.as_ref().map(|p| p.as_raw()), key, value);
+            let ret = self.remove_node(found);
+            self.insert_node(new_node.into(), parent);
+            return Some(ret);
+        }
+        let parent = found.and_then(|f| f.parent());
+        let new_node = Node::new(parent.as_ref().map(|p| p.as_raw()), key, value);
+        self.insert_node(new_node.into(), parent);
+        None
     }
 }
