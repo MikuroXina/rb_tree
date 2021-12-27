@@ -1,6 +1,6 @@
 use crate::Ptr;
 
-use std::ptr::NonNull;
+use std::{marker::PhantomData, ptr::NonNull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -34,6 +34,25 @@ pub struct Node<K, V> {
     value: V,
 }
 
+#[derive(Debug)]
+pub struct NodeRef<'n, K, V>(NonNull<Node<K, V>>, PhantomData<&'n Node<K, V>>);
+
+impl<'n, K, V> Clone for NodeRef<'n, K, V> {
+    fn clone(&self) -> Self {
+        Self(self.0, PhantomData)
+    }
+}
+
+impl<'n, K, V> Copy for NodeRef<'n, K, V> {}
+
+impl<'n, K, V> PartialEq for NodeRef<'n, K, V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<'n, K, V> Eq for NodeRef<'n, K, V> {}
+
 impl<K, V> Node<K, V> {
     pub fn new(parent: Option<NonNull<Self>>, key: K, value: V) -> Self {
         Self {
@@ -45,82 +64,92 @@ impl<K, V> Node<K, V> {
         }
     }
 
-    pub fn is_red(this: NonNull<Self>) -> bool {
-        unsafe { this.as_ref() }.color == Color::Red
-    }
-
-    pub fn is_black(this: NonNull<Self>) -> bool {
-        !Self::is_red(this)
-    }
-
-    pub fn color(this: NonNull<Self>) -> Color {
-        unsafe { this.as_ref() }.color
-    }
-
-    pub fn set_color(mut this: NonNull<Self>, color: Color) {
-        unsafe { this.as_mut() }.color = color;
-    }
-
-    pub fn parent(this: NonNull<Self>) -> Ptr<Self> {
-        unsafe { this.as_ref() }.parent
-    }
-
-    pub fn grandparent(this: NonNull<Self>) -> Ptr<Self> {
-        let parent = Self::parent(this)?;
-        unsafe { parent.as_ref() }.parent
-    }
-
-    pub fn uncle(this: NonNull<Self>) -> Ptr<Self> {
-        let parent = Self::parent(this)?;
-        let index = Self::index_on_parent(parent)?;
-        let grandparent = Self::grandparent(this)?;
-        Self::child(grandparent, !index)
-    }
-
-    pub fn sibling(this: NonNull<Self>) -> Ptr<Self> {
-        let index = Self::index_on_parent(this)?;
-        let parent = Self::parent(this)?;
-        Self::child(parent, !index)
-    }
-
-    pub fn close_nephew(this: NonNull<Self>) -> Ptr<Self> {
-        let index = Self::index_on_parent(this)?;
-        let sibling = Self::sibling(this)?;
-        Self::child(sibling, index)
-    }
-    pub fn distant_nephew(this: NonNull<Self>) -> Ptr<Self> {
-        let index = Self::index_on_parent(this)?;
-        let sibling = Self::sibling(this)?;
-        Self::child(sibling, !index)
-    }
-
-    pub fn child(this: NonNull<Self>, idx: ChildIndex) -> Ptr<Self> {
-        let children = unsafe { this.as_ref() }.children;
-        match idx {
-            ChildIndex::Left => children.0,
-            ChildIndex::Right => children.1,
-        }
-    }
-
-    pub fn set_child(mut this: NonNull<Self>, idx: ChildIndex, new_child: Ptr<Self>) {
-        if let Some(mut child) = new_child {
-            unsafe { child.as_mut() }.parent = Some(this);
-        }
-        let this = unsafe { this.as_mut() };
-        match idx {
-            ChildIndex::Left => this.children.0 = new_child,
-            ChildIndex::Right => this.children.1 = new_child,
-        }
-    }
-
     pub fn into_element(self) -> (K, V) {
         (self.key, self.value)
     }
+}
 
-    pub fn index_on_parent(this: NonNull<Self>) -> Option<ChildIndex> {
-        let parent = Self::parent(this)?;
-        let child = unsafe { parent.as_ref() }.children.0?;
-        Some(if child == this {
+impl<'n, K, V> From<&'n NonNull<Node<K, V>>> for NodeRef<'n, K, V> {
+    fn from(ptr: &'n NonNull<Node<K, V>>) -> Self {
+        Self(*ptr, PhantomData)
+    }
+}
+
+impl<'n, K, V> NodeRef<'n, K, V> {
+    pub fn as_raw(&self) -> NonNull<Node<K, V>> {
+        self.0
+    }
+
+    pub fn is_red(&self) -> bool {
+        unsafe { self.0.as_ref() }.color == Color::Red
+    }
+
+    pub fn is_black(&self) -> bool {
+        !self.is_red()
+    }
+
+    pub fn color(&self) -> Color {
+        unsafe { self.0.as_ref() }.color
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        unsafe { self.0.as_mut() }.color = color;
+    }
+
+    pub fn parent(&self) -> Option<Self> {
+        unsafe { self.0.as_ref() }.parent.as_ref().map(|p| p.into())
+    }
+
+    pub fn grandparent(&self) -> Option<Self> {
+        self.parent()?.parent()
+    }
+
+    pub fn uncle(&self) -> Option<Self> {
+        self.parent()?.sibling()
+    }
+
+    pub fn sibling(&self) -> Option<Self> {
+        let index = self.index_on_parent()?;
+        let parent = self.parent()?;
+        parent.child(!index)
+    }
+
+    pub fn close_nephew(&self) -> Option<Self> {
+        let index = self.index_on_parent()?;
+        let sibling = self.sibling()?;
+        sibling.child(index)
+    }
+
+    pub fn distant_nephew(&self) -> Option<Self> {
+        let index = self.index_on_parent()?;
+        let sibling = self.sibling()?;
+        sibling.child(!index)
+    }
+
+    pub fn child(&self, idx: ChildIndex) -> Option<Self> {
+        let this = unsafe { self.0.as_ref() };
+        match idx {
+            ChildIndex::Left => this.children.0.as_ref(),
+            ChildIndex::Right => this.children.1.as_ref(),
+        }
+        .map(|p| p.into())
+    }
+
+    pub fn set_child(&mut self, idx: ChildIndex, new_child: Option<Self>) {
+        let this = unsafe { self.0.as_mut() };
+        if let Some(mut child) = new_child {
+            unsafe { child.0.as_mut() }.parent = Some(this.into());
+        }
+        match idx {
+            ChildIndex::Left => this.children.0 = new_child.map(|p| p.0),
+            ChildIndex::Right => this.children.1 = new_child.map(|p| p.0),
+        }
+    }
+
+    pub fn index_on_parent(&self) -> Option<ChildIndex> {
+        let parent = self.parent()?;
+        let child = parent.child(ChildIndex::Left)?;
+        Some(if *self == child {
             ChildIndex::Left
         } else {
             ChildIndex::Right
@@ -128,9 +157,9 @@ impl<K, V> Node<K, V> {
     }
 }
 
-impl<K: Ord, V> Node<K, V> {
-    pub fn which_to_insert(new_node: NonNull<Self>, target: NonNull<Self>) -> ChildIndex {
-        if unsafe { new_node.as_ref() }.key < unsafe { target.as_ref() }.key {
+impl<'n, K: Ord, V> NodeRef<'n, K, V> {
+    pub fn which_to_insert(&self, new_node: &Node<K, V>) -> ChildIndex {
+        if new_node.key < unsafe { self.0.as_ref() }.key {
             ChildIndex::Left
         } else {
             ChildIndex::Right
