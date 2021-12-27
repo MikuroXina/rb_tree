@@ -1,6 +1,9 @@
 #![allow(dead_code)]
 
+mod iter;
 mod node;
+
+pub use iter::IntoIter;
 
 use node::{ChildIndex, Color, Node, NodeRef};
 
@@ -12,6 +15,25 @@ pub struct RedBlackTree<K, V> {
     root: Ptr<Node<K, V>>,
     len: usize,
     _phantom: PhantomData<Box<Node<K, V>>>,
+}
+
+// private methods
+impl<K, V> RedBlackTree<K, V> {
+    fn first_node(&self) -> Option<NodeRef<K, V>> {
+        let mut current = NodeRef::from(self.root?);
+        while let Some(left) = current.child(ChildIndex::Left) {
+            current = left;
+        }
+        Some(current)
+    }
+
+    fn last_node(&self) -> Option<NodeRef<K, V>> {
+        let mut current = NodeRef::from(self.root?);
+        while let Some(right) = current.child(ChildIndex::Right) {
+            current = right;
+        }
+        Some(current)
+    }
 }
 
 // private methods
