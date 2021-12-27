@@ -247,6 +247,22 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         }
         element
     }
+
+    fn search_node<Q>(&self, key: &Q) -> Option<NodeRef<K, V>>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        let mut current = NodeRef::from(self.root?);
+        loop {
+            let index = current.which_to_insert(key);
+            if let Some(child) = current.child(index) {
+                current = child;
+            } else {
+                return Some(current);
+            }
+        }
+    }
 }
 
 impl<K, V> Drop for RedBlackTree<K, V> {
