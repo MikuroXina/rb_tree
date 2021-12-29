@@ -21,6 +21,7 @@ fn test_partial_eq() {
     let root1_ref = NodeRef::from(&root1);
     root1_ref.assert_back_pointers();
     let root2_ref = NodeRef::from(&root2);
+    root1_ref.set_child(ChildIndex::Left, Some(root2_ref));
     root2_ref.assert_back_pointers();
 
     let left = root1_ref.child(ChildIndex::Left);
