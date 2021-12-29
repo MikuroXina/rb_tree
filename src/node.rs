@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use crate::Ptr;
 
 use std::{borrow::Borrow, ptr::NonNull};
@@ -66,6 +69,12 @@ impl<K, V> Node<K, V> {
 
     pub fn into_element(self) -> (K, V) {
         (self.key, self.value)
+    }
+}
+
+impl<K, V> From<&'_ Node<K, V>> for NodeRef<K, V> {
+    fn from(ptr: &'_ Node<K, V>) -> Self {
+        NonNull::from(ptr).into()
     }
 }
 

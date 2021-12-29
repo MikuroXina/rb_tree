@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod iter;
+mod mem;
 mod node;
 #[cfg(test)]
 mod tests;
