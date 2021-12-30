@@ -15,4 +15,5 @@ fn simple() {
     assert_eq!(tree.get(&3), Some(&'d'));
     assert_eq!(tree.get(&4), Some(&'b'));
     assert_eq!(tree.get(&5), Some(&'e'));
+    assert_eq!(tree.get(&6), None);
 }
