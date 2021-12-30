@@ -77,6 +77,14 @@ fn test_insert() {
     assert_eq!(n4.child(ChildIndex::Left), Some(n3));
     assert_eq!(n4.child(ChildIndex::Right), Some(n5));
 
+    assert_eq!(n2.search(&0), Err((n1, ChildIndex::Left)));
+    assert_eq!(n2.search(&1), Ok(n1));
+    assert_eq!(n2.search(&2), Ok(n2));
+    assert_eq!(n2.search(&3), Ok(n3));
+    assert_eq!(n2.search(&4), Ok(n4));
+    assert_eq!(n2.search(&5), Ok(n5));
+    assert_eq!(n2.search(&6), Err((n5, ChildIndex::Right)));
+
     for n in [n1, n2, n3, n4, n5] {
         unsafe {
             n.deallocate();
