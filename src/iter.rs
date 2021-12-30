@@ -23,7 +23,6 @@ impl<K, V> LeafRange<K, V> {
 }
 
 pub struct IntoIter<K, V> {
-    tree: RedBlackTree<K, V>,
     range: LeafRange<K, V>,
     length: usize,
 }
@@ -37,8 +36,8 @@ impl<K, V> IntoIterator for RedBlackTree<K, V> {
         let start = self.first_node();
         let end = self.last_node();
         let length = self.len;
+        std::mem::forget(self);
         IntoIter {
-            tree: self,
             range: LeafRange { start, end },
             length,
         }
