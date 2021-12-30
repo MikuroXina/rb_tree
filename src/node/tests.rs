@@ -16,8 +16,8 @@ impl<'a, K: 'a, V: 'a> NodeRef<K, V> {
 
 #[test]
 fn test_partial_eq() {
-    let root1 = NodeRef::new(None, 1, ());
-    let root2 = NodeRef::new(None, 2, ());
+    let root1 = NodeRef::new_root(1, ());
+    let root2 = NodeRef::new_root(2, ());
     root1.assert_back_pointers();
     root1.set_child(ChildIndex::Left, Some(root2));
     root2.assert_back_pointers();
@@ -31,4 +31,9 @@ fn test_partial_eq() {
     assert!(left != parent_1);
     assert!(left != parent_2);
     assert!(parent_1 != parent_2);
+
+    unsafe {
+        root2.deallocate();
+        root1.deallocate();
+    }
 }
