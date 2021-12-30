@@ -67,10 +67,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             unsafe { Box::from_raw(node.as_raw().as_ptr()) }.into_element()
         }
 
-        let element = match (node.child(ChildIndex::Left), node.child(ChildIndex::Right)) {
-            (None, None) => return pop_then_promote(node, None),
-            (None, Some(right)) => return pop_then_promote(node, Some(right)),
-            (Some(left), None) => return pop_then_promote(node, Some(left)),
+        let child = match (node.child(ChildIndex::Left), node.child(ChildIndex::Right)) {
             (Some(left), Some(right)) => {
                 let mut min_in_right = right;
                 while let Some(lesser) = min_in_right.child(ChildIndex::Left) {
@@ -88,13 +85,14 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                     Some(right)
                 };
                 min_in_right.set_child(ChildIndex::Right, right_top);
-                pop_then_promote(node, Some(min_in_right))
+                Some(min_in_right)
             }
+            (l, r) => l.xor(r),
         };
 
         node.balance_after_remove();
 
-        element
+        pop_then_promote(node, child)
     }
 
     fn search_node<Q>(&self, key: &Q) -> Option<NodeRef<K, V>>
