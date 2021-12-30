@@ -1,3 +1,5 @@
+use crate::mem::NodeDropGuard;
+
 use super::{ChildIndex, Color, NodeRef};
 
 impl<'a, K: 'a, V: 'a> NodeRef<K, V> {
@@ -50,6 +52,9 @@ fn test_insert() {
     let n3 = NodeRef::new_root(3, ());
     let n4 = NodeRef::new_root(4, ());
     let n5 = NodeRef::new_root(5, ());
+
+    let _guard = NodeDropGuard([n1, n2, n4, n3, n5]);
+
     n2.set_child(ChildIndex::Left, Some(n1));
     n2.set_child(ChildIndex::Right, Some(n4));
     n4.set_child(ChildIndex::Left, Some(n3));
@@ -84,10 +89,4 @@ fn test_insert() {
     assert_eq!(n2.search(&4), Ok(n4));
     assert_eq!(n2.search(&5), Ok(n5));
     assert_eq!(n2.search(&6), Err((n5, ChildIndex::Right)));
-
-    for n in [n1, n2, n3, n4, n5] {
-        unsafe {
-            n.deallocate();
-        }
-    }
 }

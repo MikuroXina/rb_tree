@@ -1,4 +1,7 @@
-use crate::node::{ChildIndex, Color, NodeRef};
+use crate::{
+    mem::NodeDropGuard,
+    node::{ChildIndex, Color, NodeRef},
+};
 
 #[test]
 fn test_after_insert() {
@@ -12,6 +15,8 @@ fn test_after_insert() {
     let n2 = NodeRef::new_root(2, ());
     let n3 = NodeRef::new_root(3, ());
     let n5 = NodeRef::new_root(5, ());
+
+    let _guard = NodeDropGuard([n1, n2, n3, n5]);
 
     n3.set_color(Color::Black);
     n5.set_color(Color::Black);
@@ -38,10 +43,4 @@ fn test_after_insert() {
     assert_eq!(n2.color(), Color::Black);
     assert_eq!(n3.color(), Color::Red);
     assert_eq!(n5.color(), Color::Black);
-
-    for n in [n1, n2, n3, n5] {
-        unsafe {
-            n.deallocate();
-        }
-    }
 }
