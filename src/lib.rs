@@ -40,7 +40,7 @@ impl<K, V> RedBlackTree<K, V> {
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
     fn insert_node(&mut self, new_node: NodeRef<K, V>, target: NodeRef<K, V>) {
-        let idx = match target.key().cmp(new_node.key()) {
+        let idx = match new_node.key().cmp(target.key()) {
             std::cmp::Ordering::Less => ChildIndex::Left,
             std::cmp::Ordering::Equal => unreachable!(),
             std::cmp::Ordering::Greater => ChildIndex::Right,
