@@ -10,12 +10,10 @@ pub use iter::IntoIter;
 
 use node::{ChildIndex, Node, NodeRef};
 
-use std::{borrow::Borrow, marker::PhantomData, ptr::NonNull};
-
-type Ptr<T> = Option<NonNull<T>>;
+use std::{borrow::Borrow, marker::PhantomData};
 
 pub struct RedBlackTree<K, V> {
-    root: Ptr<Node<K, V>>,
+    root: Option<NodeRef<K, V>>,
     len: usize,
     _phantom: PhantomData<Box<Node<K, V>>>,
 }
@@ -23,7 +21,7 @@ pub struct RedBlackTree<K, V> {
 // private methods
 impl<K, V> RedBlackTree<K, V> {
     fn first_node(&self) -> Option<NodeRef<K, V>> {
-        let mut current = NodeRef::from(self.root?);
+        let mut current = self.root?;
         while let Some(left) = current.child(ChildIndex::Left) {
             current = left;
         }
@@ -31,7 +29,7 @@ impl<K, V> RedBlackTree<K, V> {
     }
 
     fn last_node(&self) -> Option<NodeRef<K, V>> {
-        let mut current = NodeRef::from(self.root?);
+        let mut current = self.root?;
         while let Some(right) = current.child(ChildIndex::Right) {
             current = right;
         }
@@ -41,30 +39,27 @@ impl<K, V> RedBlackTree<K, V> {
 
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn insert_node(&mut self, new_node: Box<Node<K, V>>, target: Option<NodeRef<K, V>>) {
+    fn insert_node(&mut self, new_node: NodeRef<K, V>, target: Option<NodeRef<K, V>>) {
         if target.is_none() {
-            let ptr = NonNull::new(Box::into_raw(new_node)).unwrap();
-            self.root = Some(ptr);
+            self.root = Some(new_node);
             return;
         }
         let target = target.unwrap();
-        let ptr = NonNull::new(Box::into_raw(new_node)).unwrap();
-        let new_node: NodeRef<K, V> = ptr.into();
         let idx = target.which_to_insert(new_node.key());
         target.set_child(idx, Some(new_node));
 
         new_node.balance_after_insert();
     }
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
-        if self.root == Some(node.as_raw()) {
-            return unsafe { Box::from_raw(self.root.take().unwrap().as_ptr()) }.into_element();
+        if self.root == Some(node) {
+            return unsafe { self.root.take().unwrap().deallocate() };
         }
 
         fn pop_then_promote<K, V>(node: NodeRef<K, V>, child: Option<NodeRef<K, V>>) -> (K, V) {
             if let Some(parent) = node.parent() {
                 parent.set_child(node.index_on_parent().unwrap(), child);
             }
-            unsafe { Box::from_raw(node.as_raw().as_ptr()) }.into_element()
+            unsafe { node.deallocate() }
         }
 
         let child = match (node.child(ChildIndex::Left), node.child(ChildIndex::Right)) {
@@ -100,7 +95,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        let mut current = NodeRef::from(self.root?);
+        let mut current = self.root?;
         loop {
             let index = current.which_to_insert(key);
             if let Some(child) = current.child(index) {
@@ -143,14 +138,14 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             // replace
             let found = found.unwrap();
             let parent = found.parent();
-            let new_node = Node::new(parent.as_ref().map(|p| p.as_raw()), key, value);
+            let new_node = NodeRef::new(parent, key, value);
             let ret = self.remove_node(found);
-            self.insert_node(new_node.into(), parent);
+            self.insert_node(new_node, parent);
             return Some(ret);
         }
         let parent = found.and_then(|f| f.parent());
-        let new_node = Node::new(parent.as_ref().map(|p| p.as_raw()), key, value);
-        self.insert_node(new_node.into(), parent);
+        let new_node = NodeRef::new(parent, key, value);
+        self.insert_node(new_node, parent);
         None
     }
 

@@ -2,8 +2,6 @@ mod balance;
 #[cfg(test)]
 mod tests;
 
-use crate::Ptr;
-
 use std::{borrow::Borrow, ptr::NonNull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,9 +28,9 @@ impl std::ops::Not for ChildIndex {
 }
 
 pub struct Node<K, V> {
-    parent: Ptr<Node<K, V>>,
+    parent: Option<NodeRef<K, V>>,
     #[allow(clippy::type_complexity)]
-    children: (Ptr<Node<K, V>>, Ptr<Node<K, V>>),
+    children: (Option<NodeRef<K, V>>, Option<NodeRef<K, V>>),
     color: Color,
     key: K,
     value: V,
@@ -57,22 +55,6 @@ impl<K, V> PartialEq for NodeRef<K, V> {
 
 impl<K, V> Eq for NodeRef<K, V> {}
 
-impl<K, V> Node<K, V> {
-    pub fn new(parent: Option<NonNull<Self>>, key: K, value: V) -> Self {
-        Self {
-            parent,
-            children: (None, None),
-            color: Color::Red,
-            key,
-            value,
-        }
-    }
-
-    pub fn into_element(self) -> (K, V) {
-        (self.key, self.value)
-    }
-}
-
 impl<K, V> From<&'_ Node<K, V>> for NodeRef<K, V> {
     fn from(ptr: &'_ Node<K, V>) -> Self {
         NonNull::from(ptr).into()
@@ -86,7 +68,29 @@ impl<K, V> From<NonNull<Node<K, V>>> for NodeRef<K, V> {
 }
 
 impl<K, V> NodeRef<K, V> {
-    pub fn as_raw(self) -> NonNull<Node<K, V>> {
+    pub fn new(parent: Option<NodeRef<K, V>>, key: K, value: V) -> Self {
+        let ptr = Box::into_raw(
+            Node {
+                parent,
+                children: (None, None),
+                color: Color::Red,
+                key,
+                value,
+            }
+            .into(),
+        );
+        NodeRef(NonNull::new(ptr).unwrap())
+    }
+
+    pub unsafe fn deallocate(mut self) -> (K, V) {
+        let this = self.0.as_mut();
+        this.parent = None;
+        this.children = (None, None);
+        let this = Box::from_raw(self.0.as_ptr());
+        (this.key, this.value)
+    }
+
+    fn as_raw(self) -> NonNull<Node<K, V>> {
         self.0
     }
 
@@ -172,11 +176,11 @@ impl<K, V> NodeRef<K, V> {
     pub fn set_child(mut self, idx: ChildIndex, new_child: Option<Self>) {
         let this = unsafe { self.0.as_mut() };
         if let Some(mut child) = new_child {
-            unsafe { child.0.as_mut() }.parent = Some(this.into());
+            unsafe { child.0.as_mut() }.parent = Some(self);
         }
         match idx {
-            ChildIndex::Left => this.children.0 = new_child.map(|p| p.0),
-            ChildIndex::Right => this.children.1 = new_child.map(|p| p.0),
+            ChildIndex::Left => this.children.0 = new_child,
+            ChildIndex::Right => this.children.1 = new_child,
         }
     }
 

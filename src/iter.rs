@@ -1,5 +1,5 @@
 use crate::{
-    node::{ChildIndex, Node, NodeRef},
+    node::{ChildIndex, NodeRef},
     RedBlackTree,
 };
 
@@ -9,20 +9,16 @@ struct LeafRange<K, V> {
 }
 
 impl<K, V> LeafRange<K, V> {
-    fn advance_left(&mut self) -> Option<Box<Node<K, V>>> {
+    fn advance_left(&mut self) -> Option<(K, V)> {
         let start = self.start?;
         let next = start.child(ChildIndex::Right).or_else(|| start.parent())?;
-        self.start
-            .replace(next)
-            .map(|p| unsafe { Box::from_raw(p.as_raw().as_ptr()) })
+        self.start.replace(next).map(|p| unsafe { p.deallocate() })
     }
 
-    fn advance_right(&mut self) -> Option<Box<Node<K, V>>> {
+    fn advance_right(&mut self) -> Option<(K, V)> {
         let end = self.end?;
         let next = end.child(ChildIndex::Left).or_else(|| end.parent())?;
-        self.end
-            .replace(next)
-            .map(|p| unsafe { Box::from_raw(p.as_raw().as_ptr()) })
+        self.end.replace(next).map(|p| unsafe { p.deallocate() })
     }
 }
 
@@ -57,7 +53,7 @@ impl<K, V> Iterator for IntoIter<K, V> {
             None
         } else {
             self.length -= 1;
-            self.range.advance_left().map(|p| p.into_element())
+            self.range.advance_left()
         }
     }
 }
@@ -68,7 +64,7 @@ impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
             None
         } else {
             self.length -= 1;
-            self.range.advance_right().map(|p| p.into_element())
+            self.range.advance_right()
         }
     }
 }

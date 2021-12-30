@@ -1,4 +1,4 @@
-use super::{ChildIndex, Node, NodeRef};
+use super::{ChildIndex, NodeRef};
 
 impl<'a, K: 'a, V: 'a> NodeRef<K, V> {
     pub fn assert_back_pointers(self) {
@@ -16,18 +16,16 @@ impl<'a, K: 'a, V: 'a> NodeRef<K, V> {
 
 #[test]
 fn test_partial_eq() {
-    let root1 = Node::new(None, 1, ());
-    let root2 = Node::new(None, 2, ());
-    let root1_ref = NodeRef::from(&root1);
-    root1_ref.assert_back_pointers();
-    let root2_ref = NodeRef::from(&root2);
-    root1_ref.set_child(ChildIndex::Left, Some(root2_ref));
-    root2_ref.assert_back_pointers();
+    let root1 = NodeRef::new(None, 1, ());
+    let root2 = NodeRef::new(None, 2, ());
+    root1.assert_back_pointers();
+    root1.set_child(ChildIndex::Left, Some(root2));
+    root2.assert_back_pointers();
 
-    let left = root1_ref.child(ChildIndex::Left);
-    let right = root2_ref.child(ChildIndex::Right);
-    let parent_1 = root1_ref.parent();
-    let parent_2 = root2_ref.parent();
+    let left = root1.child(ChildIndex::Left);
+    let right = root2.child(ChildIndex::Right);
+    let parent_1 = root1.parent();
+    let parent_2 = root2.parent();
 
     assert!(left != right);
     assert!(left != parent_1);
