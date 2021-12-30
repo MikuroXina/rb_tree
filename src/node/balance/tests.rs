@@ -29,6 +29,11 @@ fn test_after_insert() {
     //          \
     //         [ 5 ]
 
+    assert_eq!(n2.children(), (Some(n1), Some(n3)));
+    assert_eq!(n1.children(), (None, None));
+    assert_eq!(n3.children(), (None, Some(n5)));
+    assert_eq!(n5.children(), (None, None));
+
     assert_eq!(n1.color(), Color::Red);
     assert_eq!(n2.color(), Color::Black);
     assert_eq!(n3.color(), Color::Red);
