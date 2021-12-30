@@ -96,10 +96,10 @@ impl<K, V> NodeRef<K, V> {
 
     pub fn balance_after_remove(mut self) {
         while let Some(parent) = self.parent() {
-            let sibling = self.sibling().unwrap();
+            let sibling = self.sibling();
             let close_nephew = self.close_nephew();
             let distant_nephew = self.distant_nephew();
-            if sibling.is_red() {
+            if sibling.map_or(false, NodeRef::is_red) {
                 // if the sibling is red, the parent and the nephews are black:
                 //       [parent]
                 //        /   \
@@ -108,7 +108,7 @@ impl<K, V> NodeRef<K, V> {
                 // [close_nephew] [distant_nephew]
                 parent.rotate(!self.index_on_parent().unwrap());
                 parent.set_color(Color::Red);
-                sibling.set_color(Color::Black);
+                sibling.unwrap().set_color(Color::Black);
                 // then:
                 //       [sibling]
                 //        /   \
@@ -125,7 +125,7 @@ impl<K, V> NodeRef<K, V> {
                 //         \
                 //    (distant_nephew)
                 parent.rotate(!self.index_on_parent().unwrap());
-                sibling.set_color(parent.color());
+                sibling.unwrap().set_color(parent.color());
                 parent.set_color(Color::Black);
                 distant_nephew.unwrap().set_color(Color::Black);
                 // then:
@@ -143,6 +143,7 @@ impl<K, V> NodeRef<K, V> {
                 //      node [sibling]
                 //             /   \
                 // (close_nephew) [distant_nephew]
+                let sibling = sibling.unwrap();
                 sibling.rotate(self.index_on_parent().unwrap());
                 sibling.set_color(Color::Red);
                 close_nephew.unwrap().set_color(Color::Black);
@@ -161,12 +162,16 @@ impl<K, V> NodeRef<K, V> {
                 //      node [sibling]
                 //            /    \
                 // [close_nephew] [distant_nephew]
-                sibling.set_color(Color::Red);
+                if let Some(sibling) = sibling {
+                    sibling.set_color(Color::Red)
+                }
                 parent.set_color(Color::Black);
                 break;
             }
             // if the parent and sibling and nephews are all black:
-            sibling.set_color(Color::Red);
+            if let Some(sibling) = sibling {
+                sibling.set_color(Color::Red)
+            }
             // the parent node needs to re-balance.
             self = parent;
         }
