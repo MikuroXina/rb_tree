@@ -39,17 +39,17 @@ impl<K, V> RedBlackTree<K, V> {
 
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn insert_node(&mut self, new_node: NodeRef<K, V>, target: Option<NodeRef<K, V>>) {
-        if target.is_none() {
-            self.root = Some(new_node);
-            return;
-        }
-        let target = target.unwrap();
-        let idx = target.which_to_insert(new_node.key());
+    fn insert_node(&mut self, new_node: NodeRef<K, V>, target: NodeRef<K, V>) {
+        let idx = match target.key().cmp(new_node.key()) {
+            std::cmp::Ordering::Less => ChildIndex::Left,
+            std::cmp::Ordering::Equal => unreachable!(),
+            std::cmp::Ordering::Greater => ChildIndex::Right,
+        };
         target.set_child(idx, Some(new_node));
 
         new_node.balance_after_insert();
     }
+
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
         if self.root == Some(node) {
             return unsafe { self.root.take().unwrap().deallocate() };
@@ -90,19 +90,19 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         pop_then_promote(node, child)
     }
 
-    fn search_node<Q>(&self, key: &Q) -> Option<NodeRef<K, V>>
+    fn search_node<Q>(&self, key: &Q) -> Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        let mut current = self.root?;
+        let mut current = self.root.unwrap();
         loop {
-            let index = current.which_to_insert(key);
-            if let Some(child) = current.child(index) {
-                current = child;
-            } else {
-                return Some(current);
-            }
+            let idx = match key.cmp(current.key()) {
+                std::cmp::Ordering::Less => ChildIndex::Left,
+                std::cmp::Ordering::Equal => return Ok(current),
+                std::cmp::Ordering::Greater => ChildIndex::Right,
+            };
+            current = current.child(idx).ok_or((current, idx))?
         }
     }
 }
@@ -133,20 +133,25 @@ impl<K, V> RedBlackTree<K, V> {
 
 impl<K: Ord, V> RedBlackTree<K, V> {
     pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
-        let found = self.search_node(&key);
-        if found.as_ref().map(|found| found.key().borrow()) == Some(&key) {
-            // replace
-            let found = found.unwrap();
-            let parent = found.parent();
-            let new_node = NodeRef::new(parent, key, value);
-            let ret = self.remove_node(found);
-            self.insert_node(new_node, parent);
-            return Some(ret);
+        if self.root.is_none() {
+            self.root = Some(NodeRef::new_root(key, value));
+            return None;
         }
-        let parent = found.and_then(|f| f.parent());
-        let new_node = NodeRef::new(parent, key, value);
-        self.insert_node(new_node, parent);
-        None
+        match self.search_node(&key) {
+            Ok(found) => {
+                // replace
+                let parent = found.parent().unwrap();
+                let new_node = NodeRef::new(parent, key, value);
+                let ret = self.remove_node(found);
+                self.insert_node(new_node, parent);
+                Some(ret)
+            }
+            Err((target, _)) => {
+                let new_node = NodeRef::new(target, key, value);
+                self.insert_node(new_node, target);
+                None
+            }
+        }
     }
 
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
@@ -154,8 +159,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        let found = self.search_node(key)?;
-        (found.key() == key).then(|| self.remove_node(found).1)
+        let found = self.search_node(key).ok()?;
+        Some(self.remove_node(found).1)
     }
 
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
@@ -163,6 +168,6 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        self.search_node(key).map(|n| n.value())
+        self.search_node(key).ok().map(|n| n.value())
     }
 }

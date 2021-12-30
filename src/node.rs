@@ -68,10 +68,24 @@ impl<K, V> From<NonNull<Node<K, V>>> for NodeRef<K, V> {
 }
 
 impl<K, V> NodeRef<K, V> {
-    pub fn new(parent: Option<NodeRef<K, V>>, key: K, value: V) -> Self {
+    pub fn new_root(key: K, value: V) -> Self {
         let ptr = Box::into_raw(
             Node {
-                parent,
+                parent: None,
+                children: (None, None),
+                color: Color::Red,
+                key,
+                value,
+            }
+            .into(),
+        );
+        NodeRef(NonNull::new(ptr).unwrap())
+    }
+
+    pub fn new(parent: NodeRef<K, V>, key: K, value: V) -> Self {
+        let ptr = Box::into_raw(
+            Node {
+                parent: Some(parent),
                 children: (None, None),
                 color: Color::Red,
                 key,
@@ -196,15 +210,21 @@ impl<K, V> NodeRef<K, V> {
 }
 
 impl<K: Ord, V> NodeRef<K, V> {
-    pub fn which_to_insert<Q>(self, key: &Q) -> ChildIndex
+    pub fn leaf<Q>(self, key: &Q) -> Self
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        if key < unsafe { self.0.as_ref() }.key.borrow() {
-            ChildIndex::Left
-        } else {
-            ChildIndex::Right
+        match key.cmp(self.key()) {
+            std::cmp::Ordering::Less => self
+                .child(ChildIndex::Left)
+                .map(|l| l.leaf(key))
+                .unwrap_or(self),
+            std::cmp::Ordering::Equal => self,
+            std::cmp::Ordering::Greater => self
+                .child(ChildIndex::Right)
+                .map(|r| r.leaf(key))
+                .unwrap_or(self),
         }
     }
 }
