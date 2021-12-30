@@ -234,4 +234,19 @@ impl<K: Ord, V> NodeRef<K, V> {
                 .unwrap_or(self),
         }
     }
+
+    pub fn search<Q>(mut self, key: &Q) -> Result<Self, (Self, ChildIndex)>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        loop {
+            let idx = match key.cmp(self.key()) {
+                std::cmp::Ordering::Less => ChildIndex::Left,
+                std::cmp::Ordering::Equal => return Ok(self),
+                std::cmp::Ordering::Greater => ChildIndex::Right,
+            };
+            self = self.child(idx).ok_or((self, idx))?
+        }
+    }
 }

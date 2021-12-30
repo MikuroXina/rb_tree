@@ -96,15 +96,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        let mut current = self.root.unwrap();
-        loop {
-            let idx = match key.cmp(current.key()) {
-                std::cmp::Ordering::Less => ChildIndex::Left,
-                std::cmp::Ordering::Equal => return Ok(current),
-                std::cmp::Ordering::Greater => ChildIndex::Right,
-            };
-            current = current.child(idx).ok_or((current, idx))?
-        }
+        self.root.unwrap().search(key)
     }
 }
 
