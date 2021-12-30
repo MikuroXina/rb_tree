@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use super::{ChildIndex, Color, NodeRef};
 
 impl<K, V> NodeRef<K, V> {
