@@ -45,6 +45,12 @@ impl<K, V> IntoIterator for RedBlackTree<K, V> {
     }
 }
 
+impl<K, V> Drop for IntoIter<K, V> {
+    fn drop(&mut self) {
+        for _ in self {}
+    }
+}
+
 impl<K, V> Iterator for IntoIter<K, V> {
     type Item = (K, V);
 
