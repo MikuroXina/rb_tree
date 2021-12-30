@@ -42,9 +42,9 @@ fn test_partial_eq() {
 fn test_insert() {
     //    ( 2 )
     //    /   \
-    // [ 1 ] ( 4 )
+    // [ 1 ] [ 4 ]
     //       /   \
-    //    [ 3 ] [ 5 ]
+    //    ( 3 ) ( 5 )
     let n1 = NodeRef::new_root(1, ());
     let n2 = NodeRef::new_root(2, ());
     let n3 = NodeRef::new_root(3, ());
@@ -59,9 +59,27 @@ fn test_insert() {
     n3.balance_after_insert();
     n5.balance_after_insert();
 
-    assert!(n2.color() == Color::Red);
-    assert!(n4.color() == Color::Red);
+    assert_eq!(n1.key(), &1);
+    assert_eq!(n2.key(), &2);
+    assert_eq!(n3.key(), &3);
+    assert_eq!(n4.key(), &4);
+    assert_eq!(n5.key(), &5);
+
     assert!(n1.color() == Color::Black);
-    assert!(n3.color() == Color::Black);
-    assert!(n5.color() == Color::Black);
+    assert!(n2.color() == Color::Red);
+    assert!(n3.color() == Color::Red);
+    assert!(n4.color() == Color::Black);
+    assert!(n5.color() == Color::Red);
+
+    assert!(n2.parent().is_none());
+    assert_eq!(n2.child(ChildIndex::Left), Some(n1));
+    assert_eq!(n2.child(ChildIndex::Right), Some(n4));
+    assert_eq!(n4.child(ChildIndex::Left), Some(n3));
+    assert_eq!(n4.child(ChildIndex::Right), Some(n5));
+
+    for n in [n1, n2, n3, n4, n5] {
+        unsafe {
+            n.deallocate();
+        }
+    }
 }
