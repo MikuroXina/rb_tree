@@ -28,21 +28,21 @@ impl<K, V> NodeRef<K, V> {
     }
 
     pub fn balance_after_insert(mut self) {
-        while let Some(parent) = self.parent() {
-            if parent.is_black() {
-                // if the parent is black, the tree is well balanced.
+        loop {
+            if self.parent().is_none() || self.parent().unwrap().is_black() {
+                // if the parent is black or none, the tree is well balanced.
                 return;
             }
             // the parent is red
-            if parent.parent().is_none() {
+            if self.grandparent().is_none() {
                 // if the parent is red and no grandparent exists, the root parent will be black.
-                parent.set_color(Color::Black);
+                self.parent().unwrap().set_color(Color::Black);
                 return;
             }
             // the parent is red and the grandparent exists
             if self.uncle().map_or(false, |uncle| uncle.is_red()) {
                 // if the parent and the uncle is red, they will be black and the grandparent will be red.
-                parent.set_color(Color::Black);
+                self.parent().unwrap().set_color(Color::Black);
                 self.uncle().unwrap().set_color(Color::Black);
                 let grandparent = self.grandparent().unwrap();
                 grandparent.set_color(Color::Red);
@@ -51,7 +51,8 @@ impl<K, V> NodeRef<K, V> {
                 continue;
             }
             // the parent is red and the uncle is black
-            if parent.index_on_parent() != self.index_on_parent() {
+            if self.parent().unwrap().index_on_parent() != self.index_on_parent() {
+                let parent = self.parent().unwrap();
                 // if the nodes are connected:
                 //   [grandparent]  |  [grandparent]
                 //     /     \      |     /     \
@@ -60,11 +61,11 @@ impl<K, V> NodeRef<K, V> {
                 //     (self)       |      (self)
                 parent.rotate(self.index_on_parent().unwrap());
                 // then rotated:
-                //   [grandparent]    |  [grandparent]
-                //     /     \        |     /     \
-                // (self) [uncle]     | [uncle] (self)
-                //   /                |             \
-                // (parent)           |          (parent)
+                //   [grandparent] |  [grandparent]
+                //     /     \     |     /     \
+                // (self) [uncle]  | [uncle] (self)
+                //   /             |             \
+                // (parent)        |          (parent)
                 self = parent;
             }
             // the nodes are connected:
@@ -73,7 +74,7 @@ impl<K, V> NodeRef<K, V> {
             // (parent) [uncle] | [uncle] (parent)
             //   /              |             \
             // (self)           |          (self)
-            parent.set_color(Color::Black);
+            self.parent().unwrap().set_color(Color::Black);
             let grandparent = self.grandparent().unwrap();
             grandparent.set_color(Color::Red);
             // then colored:
@@ -84,11 +85,11 @@ impl<K, V> NodeRef<K, V> {
             // (self)           |          (self)
             grandparent.rotate(self.index_on_parent().unwrap());
             // finished:
-            //       [parent]           |          [parent]
-            //        /    \            |           /    \
+            //   [parent]           |          [parent]
+            //    /    \            |           /    \
             // (self) (grandparent) | (grandparent) (self)
-            //                \         |      /
-            //              [uncle]     |   [uncle]
+            //            \         |      /
+            //          [uncle]     |   [uncle]
             return;
         }
     }
