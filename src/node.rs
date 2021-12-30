@@ -200,8 +200,8 @@ impl<K, V> NodeRef<K, V> {
 
     pub fn index_on_parent(self) -> Option<ChildIndex> {
         let parent = self.parent()?;
-        let child = parent.child(ChildIndex::Left)?;
-        Some(if self == child {
+        let child = parent.child(ChildIndex::Left);
+        Some(if Some(self) == child {
             ChildIndex::Left
         } else {
             ChildIndex::Right
