@@ -1,4 +1,4 @@
-use super::{ChildIndex, NodeRef};
+use super::{ChildIndex, Color, NodeRef};
 
 impl<'a, K: 'a, V: 'a> NodeRef<K, V> {
     pub fn assert_back_pointers(self) {
@@ -36,4 +36,32 @@ fn test_partial_eq() {
         root2.deallocate();
         root1.deallocate();
     }
+}
+
+#[test]
+fn test_insert() {
+    //    ( 2 )
+    //    /   \
+    // [ 1 ] ( 4 )
+    //       /   \
+    //    [ 3 ] [ 5 ]
+    let n1 = NodeRef::new_root(1, ());
+    let n2 = NodeRef::new_root(2, ());
+    let n3 = NodeRef::new_root(3, ());
+    let n4 = NodeRef::new_root(4, ());
+    let n5 = NodeRef::new_root(5, ());
+    n2.set_child(ChildIndex::Left, Some(n1));
+    n2.set_child(ChildIndex::Right, Some(n4));
+    n4.set_child(ChildIndex::Left, Some(n3));
+    n4.set_child(ChildIndex::Right, Some(n5));
+    n1.balance_after_insert();
+    n4.balance_after_insert();
+    n3.balance_after_insert();
+    n5.balance_after_insert();
+
+    assert!(n2.color() == Color::Red);
+    assert!(n4.color() == Color::Red);
+    assert!(n1.color() == Color::Black);
+    assert!(n3.color() == Color::Black);
+    assert!(n5.color() == Color::Black);
 }
