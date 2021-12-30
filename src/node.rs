@@ -124,6 +124,13 @@ impl<K, V> NodeRef<K, V> {
         &unsafe { self.0.as_ref() }.value
     }
 
+    pub fn value_mut<'a>(mut self) -> &'a mut V
+    where
+        K: 'a,
+    {
+        &mut unsafe { self.0.as_mut() }.value
+    }
+
     pub fn is_red(self) -> bool {
         unsafe { self.0.as_ref() }.color == Color::Red
     }

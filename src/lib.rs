@@ -142,11 +142,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         match self.search_node(&key) {
             Ok(found) => {
                 // replace
-                let parent = found.parent().unwrap();
-                let new_node = NodeRef::new(parent, key, value);
-                let ret = self.remove_node(found);
-                self.insert_node(new_node, parent);
-                Some(ret)
+                let old_v = std::mem::replace(found.value_mut(), value);
+                Some((key, old_v))
             }
             Err((target, _)) => {
                 let new_node = NodeRef::new(target, key, value);
