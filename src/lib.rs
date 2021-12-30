@@ -134,7 +134,7 @@ impl<K, V> RedBlackTree<K, V> {
 
 impl<K: Ord, V> RedBlackTree<K, V> {
     pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
-        if self.root.is_none() {
+        if self.is_empty() {
             self.root = Some(NodeRef::new_root(key, value));
             self.len += 1;
             return None;
@@ -159,6 +159,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
+        if self.is_empty() {
+            return None;
+        }
         let found = self.search_node(key).ok()?;
         self.len -= 1;
         Some(self.remove_node(found).1)
@@ -169,6 +172,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
+        if self.is_empty() {
+            return None;
+        }
         self.search_node(key).ok().map(|n| n.value())
     }
 }
