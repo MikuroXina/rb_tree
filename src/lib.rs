@@ -51,7 +51,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
-        if self.root == Some(node) {
+        if node.parent().is_none() {
+            // the node is root
             return unsafe { self.root.take().unwrap().deallocate() };
         }
 
