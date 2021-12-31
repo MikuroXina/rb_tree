@@ -122,7 +122,7 @@ impl<K, V> NodeRef<K, V> {
     }
 
     pub fn parent(self) -> Option<Self> {
-        unsafe { self.0.as_ref() }.parent.map(Into::into)
+        unsafe { self.0.as_ref() }.parent
     }
 
     pub fn grandparent(self) -> Option<Self> {
@@ -152,11 +152,7 @@ impl<K, V> NodeRef<K, V> {
     }
 
     pub fn children(self) -> (Option<Self>, Option<Self>) {
-        let this = unsafe { self.0.as_ref() };
-        (
-            this.children.0.map(Into::into),
-            this.children.1.map(Into::into),
-        )
+        unsafe { self.0.as_ref() }.children
     }
 
     pub fn child(self, idx: ChildIndex) -> Option<Self> {
@@ -165,7 +161,6 @@ impl<K, V> NodeRef<K, V> {
             ChildIndex::Left => this.children.0,
             ChildIndex::Right => this.children.1,
         }
-        .map(Into::into)
     }
 
     pub fn set_child(mut self, idx: ChildIndex, new_child: Option<Self>) {
@@ -191,24 +186,6 @@ impl<K, V> NodeRef<K, V> {
 }
 
 impl<K: Ord, V> NodeRef<K, V> {
-    pub fn leaf<Q>(self, key: &Q) -> Self
-    where
-        K: Borrow<Q>,
-        Q: Ord + ?Sized,
-    {
-        match key.cmp(self.key()) {
-            std::cmp::Ordering::Less => self
-                .child(ChildIndex::Left)
-                .map(|l| l.leaf(key))
-                .unwrap_or(self),
-            std::cmp::Ordering::Equal => self,
-            std::cmp::Ordering::Greater => self
-                .child(ChildIndex::Right)
-                .map(|r| r.leaf(key))
-                .unwrap_or(self),
-        }
-    }
-
     pub fn search<Q>(mut self, key: &Q) -> Result<Self, (Self, ChildIndex)>
     where
         K: Borrow<Q>,
