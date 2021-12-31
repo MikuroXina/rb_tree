@@ -42,51 +42,55 @@ fn test_partial_eq() {
 
 #[test]
 fn test_insert() {
-    //    ( 2 )
+    //    ( 3 )
     //    /   \
-    // [ 1 ] [ 4 ]
+    // [ 1 ] [ 7 ]
     //       /   \
-    //    ( 3 ) ( 5 )
+    //    ( 5 ) ( 9 )
     let n1 = NodeRef::new_root(1, ());
-    let n2 = NodeRef::new_root(2, ());
     let n3 = NodeRef::new_root(3, ());
-    let n4 = NodeRef::new_root(4, ());
     let n5 = NodeRef::new_root(5, ());
+    let n7 = NodeRef::new_root(7, ());
+    let n9 = NodeRef::new_root(9, ());
 
-    let _guard = NodeDropGuard([n1, n2, n4, n3, n5]);
+    let _guard = NodeDropGuard([n1, n3, n7, n5, n9]);
 
-    n2.set_child(ChildIndex::Left, Some(n1));
-    n2.set_child(ChildIndex::Right, Some(n4));
-    n4.set_child(ChildIndex::Left, Some(n3));
-    n4.set_child(ChildIndex::Right, Some(n5));
+    n3.set_child(ChildIndex::Left, Some(n1));
+    n3.set_child(ChildIndex::Right, Some(n7));
+    n7.set_child(ChildIndex::Left, Some(n5));
+    n7.set_child(ChildIndex::Right, Some(n9));
     n1.balance_after_insert();
-    n4.balance_after_insert();
-    n3.balance_after_insert();
+    n7.balance_after_insert();
     n5.balance_after_insert();
+    n9.balance_after_insert();
 
     assert_eq!(n1.key(), &1);
-    assert_eq!(n2.key(), &2);
     assert_eq!(n3.key(), &3);
-    assert_eq!(n4.key(), &4);
     assert_eq!(n5.key(), &5);
+    assert_eq!(n7.key(), &7);
+    assert_eq!(n9.key(), &9);
 
     assert!(n1.color() == Color::Black);
-    assert!(n2.color() == Color::Red);
     assert!(n3.color() == Color::Red);
-    assert!(n4.color() == Color::Black);
     assert!(n5.color() == Color::Red);
+    assert!(n7.color() == Color::Black);
+    assert!(n9.color() == Color::Red);
 
-    assert!(n2.parent().is_none());
-    assert_eq!(n2.child(ChildIndex::Left), Some(n1));
-    assert_eq!(n2.child(ChildIndex::Right), Some(n4));
-    assert_eq!(n4.child(ChildIndex::Left), Some(n3));
-    assert_eq!(n4.child(ChildIndex::Right), Some(n5));
+    assert!(n3.parent().is_none());
+    assert_eq!(n3.child(ChildIndex::Left), Some(n1));
+    assert_eq!(n3.child(ChildIndex::Right), Some(n7));
+    assert_eq!(n7.child(ChildIndex::Left), Some(n5));
+    assert_eq!(n7.child(ChildIndex::Right), Some(n9));
 
-    assert_eq!(n2.search(&0), Err((n1, ChildIndex::Left)));
-    assert_eq!(n2.search(&1), Ok(n1));
-    assert_eq!(n2.search(&2), Ok(n2));
-    assert_eq!(n2.search(&3), Ok(n3));
-    assert_eq!(n2.search(&4), Ok(n4));
-    assert_eq!(n2.search(&5), Ok(n5));
-    assert_eq!(n2.search(&6), Err((n5, ChildIndex::Right)));
+    assert_eq!(n3.search(&0), Err((n1, ChildIndex::Left)));
+    assert_eq!(n3.search(&1), Ok(n1));
+    assert_eq!(n3.search(&2), Err((n1, ChildIndex::Right)));
+    assert_eq!(n3.search(&3), Ok(n3));
+    assert_eq!(n3.search(&4), Err((n5, ChildIndex::Left)));
+    assert_eq!(n3.search(&5), Ok(n5));
+    assert_eq!(n3.search(&6), Err((n5, ChildIndex::Right)));
+    assert_eq!(n3.search(&7), Ok(n7));
+    assert_eq!(n3.search(&8), Err((n9, ChildIndex::Left)));
+    assert_eq!(n3.search(&9), Ok(n9));
+    assert_eq!(n3.search(&10), Err((n9, ChildIndex::Right)));
 }
