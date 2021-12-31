@@ -39,12 +39,7 @@ impl<K, V> RedBlackTree<K, V> {
 
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn insert_node(&mut self, new_node: NodeRef<K, V>, target: NodeRef<K, V>) {
-        let idx = match new_node.key().cmp(target.key()) {
-            std::cmp::Ordering::Less => ChildIndex::Left,
-            std::cmp::Ordering::Equal => unreachable!(),
-            std::cmp::Ordering::Greater => ChildIndex::Right,
-        };
+    fn insert_node(&mut self, new_node: NodeRef<K, V>, (target, idx): (NodeRef<K, V>, ChildIndex)) {
         target.set_child(idx, Some(new_node));
 
         new_node.balance_after_insert();
@@ -137,8 +132,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 let old_v = std::mem::replace(found.value_mut(), value);
                 Some((key, old_v))
             }
-            Err((target, _)) => {
-                let new_node = NodeRef::new(target, key, value);
+            Err(target) => {
+                let new_node = NodeRef::new(target.0, key, value);
                 self.insert_node(new_node, target);
                 self.len += 1;
                 None
