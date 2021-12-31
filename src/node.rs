@@ -55,18 +55,6 @@ impl<K, V> PartialEq for NodeRef<K, V> {
 
 impl<K, V> Eq for NodeRef<K, V> {}
 
-impl<K, V> From<&'_ Node<K, V>> for NodeRef<K, V> {
-    fn from(ptr: &'_ Node<K, V>) -> Self {
-        NonNull::from(ptr).into()
-    }
-}
-
-impl<K, V> From<NonNull<Node<K, V>>> for NodeRef<K, V> {
-    fn from(ptr: NonNull<Node<K, V>>) -> Self {
-        Self(ptr)
-    }
-}
-
 impl<K, V> NodeRef<K, V> {
     pub fn new(key: K, value: V) -> Self {
         let ptr = Box::into_raw(
