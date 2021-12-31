@@ -21,9 +21,9 @@ fn test_after_insert() {
     n3.set_color(Color::Black);
     n5.set_color(Color::Black);
 
-    n3.set_child(ChildIndex::Left, Some(n2));
+    n3.set_child(ChildIndex::Left, Some(n1));
     n3.set_child(ChildIndex::Right, Some(n5));
-    n1.set_child(ChildIndex::Left, Some(n2));
+    n1.set_child(ChildIndex::Right, Some(n2));
 
     n2.balance_after_insert();
 
