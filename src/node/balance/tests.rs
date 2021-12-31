@@ -5,7 +5,7 @@ use crate::{
 
 #[test]
 fn test_after_insert() {
-    // when `0` has just inserted:
+    // when `2` has just inserted:
     //    [ 3 ]
     //    /   \
     // ( 1 ) [ 5 ]
@@ -25,7 +25,7 @@ fn test_after_insert() {
     n3.set_child(ChildIndex::Right, Some(n5));
     n1.set_child(ChildIndex::Left, Some(n2));
 
-    n1.balance_after_insert();
+    n2.balance_after_insert();
 
     // it must be balanced as:
     //    [ 2 ]
