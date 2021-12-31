@@ -11,10 +11,10 @@ fn test_after_insert() {
     // ( 1 ) [ 5 ]
     //    \
     //   ( 2 )
-    let n1 = NodeRef::new_root(1, ());
-    let n2 = NodeRef::new_root(2, ());
-    let n3 = NodeRef::new_root(3, ());
-    let n5 = NodeRef::new_root(5, ());
+    let n1 = NodeRef::new(1, ());
+    let n2 = NodeRef::new(2, ());
+    let n3 = NodeRef::new(3, ());
+    let n5 = NodeRef::new(5, ());
 
     let _guard = NodeDropGuard([n1, n2, n3, n5]);
 

@@ -68,24 +68,10 @@ impl<K, V> From<NonNull<Node<K, V>>> for NodeRef<K, V> {
 }
 
 impl<K, V> NodeRef<K, V> {
-    pub fn new_root(key: K, value: V) -> Self {
+    pub fn new(key: K, value: V) -> Self {
         let ptr = Box::into_raw(
             Node {
                 parent: None,
-                children: (None, None),
-                color: Color::Red,
-                key,
-                value,
-            }
-            .into(),
-        );
-        NodeRef(NonNull::new(ptr).unwrap())
-    }
-
-    pub fn new(parent: NodeRef<K, V>, key: K, value: V) -> Self {
-        let ptr = Box::into_raw(
-            Node {
-                parent: Some(parent),
                 children: (None, None),
                 color: Color::Red,
                 key,

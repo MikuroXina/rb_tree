@@ -18,8 +18,8 @@ impl<'a, K: 'a, V: 'a> NodeRef<K, V> {
 
 #[test]
 fn test_partial_eq() {
-    let root1 = NodeRef::new_root(1, ());
-    let root2 = NodeRef::new_root(2, ());
+    let root1 = NodeRef::new(1, ());
+    let root2 = NodeRef::new(2, ());
     root1.assert_back_pointers();
     root1.set_child(ChildIndex::Left, Some(root2));
     root2.assert_back_pointers();
@@ -47,11 +47,11 @@ fn test_insert() {
     // [ 1 ] [ 7 ]
     //       /   \
     //    ( 5 ) ( 9 )
-    let n1 = NodeRef::new_root(1, ());
-    let n3 = NodeRef::new_root(3, ());
-    let n5 = NodeRef::new_root(5, ());
-    let n7 = NodeRef::new_root(7, ());
-    let n9 = NodeRef::new_root(9, ());
+    let n1 = NodeRef::new(1, ());
+    let n3 = NodeRef::new(3, ());
+    let n5 = NodeRef::new(5, ());
+    let n7 = NodeRef::new(7, ());
+    let n9 = NodeRef::new(9, ());
 
     let _guard = NodeDropGuard([n1, n3, n7, n5, n9]);
 
