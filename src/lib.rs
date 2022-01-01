@@ -123,6 +123,22 @@ impl<K: Ord, V> FromIterator<(K, V)> for RedBlackTree<K, V> {
     }
 }
 
+impl<K: Ord, V> Extend<(K, V)> for RedBlackTree<K, V> {
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
+        for (k, v) in iter {
+            self.insert(k, v);
+        }
+    }
+}
+
+impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RedBlackTree<K, V> {
+    fn extend<T: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iter: T) {
+        for (k, v) in iter {
+            self.insert(*k, *v);
+        }
+    }
+}
+
 impl<K, V> RedBlackTree<K, V> {
     pub const fn new() -> Self {
         Self {
