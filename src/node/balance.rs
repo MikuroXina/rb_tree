@@ -16,12 +16,14 @@ impl<K, V> NodeRef<K, V> {
         // [be_risen] [node]
         //             /   \
         //     [be_moved] [be_fallen]
-        let pivot = self.child(pivot_idx).expect("pivot must be found");
+        let mut pivot = self.child(pivot_idx).expect("pivot must be found");
         let be_moved = pivot.child(!pivot_idx);
 
         if let Some((parent, idx)) = self.parent().zip(self.index_on_parent()) {
             // update `parent`'s child
             parent.set_child(idx, Some(pivot));
+        } else {
+            unsafe { pivot.0.as_mut() }.parent = None;
         }
         // update `pivot`'s child
         pivot.set_child(!pivot_idx, Some(self));
