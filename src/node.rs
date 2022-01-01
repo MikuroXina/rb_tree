@@ -1,7 +1,3 @@
-mod balance;
-#[cfg(test)]
-mod tests;
-
 use std::{borrow::Borrow, ptr::NonNull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

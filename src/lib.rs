@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod balance;
 mod iter;
 mod mem;
 mod node;
@@ -42,7 +43,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     fn insert_node(&mut self, new_node: NodeRef<K, V>, (target, idx): (NodeRef<K, V>, ChildIndex)) {
         target.set_child(idx, Some(new_node));
 
-        new_node.balance_after_insert();
+        self.balance_after_insert(new_node);
 
         let mut new_root = new_node;
         while let Some(parent) = new_root.parent() {
@@ -87,7 +88,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             (l, r) => l.xor(r),
         };
 
-        node.balance_after_remove();
+        self.balance_after_remove(node);
 
         pop_then_promote(node, child)
     }

@@ -1,10 +1,10 @@
-#[cfg(test)]
-mod tests;
+use crate::{
+    node::{ChildIndex, Color, NodeRef},
+    RedBlackTree,
+};
 
-use super::{ChildIndex, Color, NodeRef};
-
-impl<K, V> NodeRef<K, V> {
-    fn rotate(self, pivot_idx: ChildIndex) -> Self {
+impl<K, V> RedBlackTree<K, V> {
+    fn rotate(&mut self, target: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
         //           [node]
         //            /   \
         //        [pivot] [be_fallen]
@@ -16,94 +16,94 @@ impl<K, V> NodeRef<K, V> {
         // [be_risen] [node]
         //             /   \
         //     [be_moved] [be_fallen]
-        let mut pivot = self.child(pivot_idx).expect("pivot must be found");
+        let pivot = target.child(pivot_idx).expect("pivot must be found");
         let be_moved = pivot.child(!pivot_idx);
 
-        if let Some((parent, idx)) = self.parent().zip(self.index_on_parent()) {
+        if let Some((parent, idx)) = target.parent().zip(target.index_on_parent()) {
             // update `parent`'s child
             parent.set_child(idx, Some(pivot));
         } else {
-            unsafe { pivot.0.as_mut() }.parent = None;
+            self.root = Some(pivot);
         }
         // update `pivot`'s child
-        pivot.set_child(!pivot_idx, Some(self));
+        pivot.set_child(!pivot_idx, Some(target));
         // update `node`'s child
-        self.set_child(pivot_idx, be_moved);
+        target.set_child(pivot_idx, be_moved);
         pivot
     }
 
-    pub fn balance_after_insert(mut self) {
+    pub fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
         loop {
-            if self.parent().is_none() || self.parent().unwrap().is_black() {
+            if target.parent().is_none() || target.parent().unwrap().is_black() {
                 // if the parent is black or none, the tree is well balanced.
                 return;
             }
             // the parent is red
-            if self.grandparent().is_none() {
+            if target.grandparent().is_none() {
                 // if the parent is red and no grandparent exists, the root parent will be black.
-                self.parent().unwrap().set_color(Color::Black);
+                target.parent().unwrap().set_color(Color::Black);
                 return;
             }
             // the parent is red and the grandparent exists
-            if self.uncle().map_or(false, |uncle| uncle.is_red()) {
+            if target.uncle().map_or(false, |uncle| uncle.is_red()) {
                 // if the parent and the uncle is red, they will be black and the grandparent will be red.
-                self.parent().unwrap().set_color(Color::Black);
-                self.uncle().unwrap().set_color(Color::Black);
-                let grandparent = self.grandparent().unwrap();
+                target.parent().unwrap().set_color(Color::Black);
+                target.uncle().unwrap().set_color(Color::Black);
+                let grandparent = target.grandparent().unwrap();
                 grandparent.set_color(Color::Red);
                 // then nodes above the grandparent needs to re-balance.
-                self = grandparent;
+                target = grandparent;
                 continue;
             }
             // the parent is red and the uncle is black
-            if self.parent().unwrap().index_on_parent() != self.index_on_parent() {
-                let parent = self.parent().unwrap();
+            if target.parent().unwrap().index_on_parent() != target.index_on_parent() {
+                let parent = target.parent().unwrap();
                 // if the nodes are connected:
                 //   [grandparent]  |  [grandparent]
                 //     /     \      |     /     \
                 // (parent) [uncle] | [uncle] (parent)
                 //      \           |           /
-                //     (self)       |      (self)
-                parent.rotate(self.index_on_parent().unwrap());
+                //     (target)     |      (target)
+                self.rotate(parent, target.index_on_parent().unwrap());
                 // then rotated:
-                //   [grandparent] |  [grandparent]
-                //     /     \     |     /     \
-                // (self) [uncle]  | [uncle] (self)
-                //   /             |             \
-                // (parent)        |          (parent)
-                self = parent;
+                //   [grandparent]  |  [grandparent]
+                //     /     \      |     /     \
+                // (target) [uncle] | [uncle] (target)
+                //   /              |             \
+                // (parent)         |          (parent)
+                target = parent;
             }
             // the nodes are connected:
             //   [grandparent]  |  [grandparent]
             //     /     \      |     /     \
             // (parent) [uncle] | [uncle] (parent)
             //   /              |             \
-            // (self)           |          (self)
-            self.parent().unwrap().set_color(Color::Black);
-            let grandparent = self.grandparent().unwrap();
+            // (target)         |          (target)
+            target.parent().unwrap().set_color(Color::Black);
+            let grandparent = target.grandparent().unwrap();
             grandparent.set_color(Color::Red);
             // then colored:
             //   (grandparent)  |  (grandparent)
             //     /     \      |     /     \
             // [parent] [uncle] | [uncle] [parent]
             //   /              |             \
-            // (self)           |          (self)
-            grandparent.rotate(self.index_on_parent().unwrap());
+            // (target)         |          (target)
+            self.rotate(grandparent, target.index_on_parent().unwrap());
             // finished:
-            //   [parent]           |          [parent]
-            //    /    \            |           /    \
-            // (self) (grandparent) | (grandparent) (self)
-            //            \         |      /
-            //          [uncle]     |   [uncle]
+            //   [parent]             |          [parent]
+            //    /    \              |           /    \
+            // (target) (grandparent) | (grandparent) (target)
+            //            \           |      /
+            //          [uncle]       |   [uncle]
             return;
         }
     }
 
-    pub fn balance_after_remove(mut self) {
-        while let Some(parent) = self.parent() {
-            let sibling = self.sibling();
-            let close_nephew = self.close_nephew();
-            let distant_nephew = self.distant_nephew();
+    pub fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
+        while let Some(parent) = target.parent() {
+            let sibling = target.sibling();
+            let close_nephew = target.close_nephew();
+            let distant_nephew = target.distant_nephew();
             if sibling.map_or(false, NodeRef::is_red) {
                 // if the sibling is red, the parent and the nephews are black:
                 //       [parent]
@@ -111,7 +111,7 @@ impl<K, V> NodeRef<K, V> {
                 //      node (sibling)
                 //            /    \
                 // [close_nephew] [distant_nephew]
-                parent.rotate(!self.index_on_parent().unwrap());
+                self.rotate(parent, !target.index_on_parent().unwrap());
                 parent.set_color(Color::Red);
                 sibling.unwrap().set_color(Color::Black);
                 // then:
@@ -129,7 +129,7 @@ impl<K, V> NodeRef<K, V> {
                 // node [sibling]
                 //         \
                 //    (distant_nephew)
-                parent.rotate(!self.index_on_parent().unwrap());
+                self.rotate(parent, !target.index_on_parent().unwrap());
                 sibling.unwrap().set_color(parent.color());
                 parent.set_color(Color::Black);
                 distant_nephew.unwrap().set_color(Color::Black);
@@ -149,7 +149,7 @@ impl<K, V> NodeRef<K, V> {
                 //             /   \
                 // (close_nephew) [distant_nephew]
                 let sibling = sibling.unwrap();
-                sibling.rotate(self.index_on_parent().unwrap());
+                self.rotate(sibling, target.index_on_parent().unwrap());
                 sibling.set_color(Color::Red);
                 close_nephew.unwrap().set_color(Color::Black);
                 // then:
@@ -178,7 +178,7 @@ impl<K, V> NodeRef<K, V> {
                 sibling.set_color(Color::Red)
             }
             // the parent node needs to re-balance.
-            self = parent;
+            target = parent;
         }
     }
 }
