@@ -174,6 +174,20 @@ impl<K, V> RedBlackTree<K, V> {
 }
 
 impl<K: Ord, V> RedBlackTree<K, V> {
+    pub fn append(&mut self, other: &mut Self) {
+        if other.is_empty() {
+            return;
+        }
+        if self.is_empty() {
+            std::mem::swap(self, other);
+            return;
+        }
+
+        for (k, v) in other.drain_filter(|_, _| true) {
+            self.insert(k, v);
+        }
+    }
+
     pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
         if self.is_empty() {
             self.root = Some(NodeRef::new(key, value));
