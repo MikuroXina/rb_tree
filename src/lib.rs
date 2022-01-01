@@ -216,26 +216,6 @@ impl<K, V> RedBlackTree<K, V> {
     pub fn iter_mut(&mut self) -> IterMut<K, V> {
         self.into_iter()
     }
-
-    pub fn into_keys(self) -> IntoKeys<K, V> {
-        IntoKeys(self.into_iter())
-    }
-
-    pub fn keys(&self) -> Keys<K, V> {
-        Keys(self.into_iter())
-    }
-
-    pub fn into_values(self) -> IntoValues<K, V> {
-        IntoValues(self.into_iter())
-    }
-
-    pub fn values(&self) -> Values<K, V> {
-        Values(self.into_iter())
-    }
-
-    pub fn values_mut(&mut self) -> ValuesMut<K, V> {
-        ValuesMut(self.into_iter())
-    }
 }
 
 impl<K: Ord, V> RedBlackTree<K, V> {

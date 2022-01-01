@@ -1,0 +1,95 @@
+use std::iter::FusedIterator;
+
+use crate::RedBlackTree;
+
+use super::{IntoIter, Iter};
+
+impl<K, V> RedBlackTree<K, V> {
+    pub fn into_keys(self) -> IntoKeys<K, V> {
+        IntoKeys(self.into_iter())
+    }
+
+    pub fn keys(&self) -> Keys<K, V> {
+        Keys(self.into_iter())
+    }
+}
+
+pub struct IntoKeys<K, V>(IntoIter<K, V>);
+
+impl<K, V> Iterator for IntoKeys<K, V> {
+    type Item = K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, _)| k)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+}
+
+impl<K, V> DoubleEndedIterator for IntoKeys<K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<K, V> ExactSizeIterator for IntoKeys<K, V> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<K, V> FusedIterator for IntoKeys<K, V> {}
+
+pub struct Keys<'a, K, V>(Iter<'a, K, V>);
+
+impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, _)| k)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> ExactSizeIterator for Keys<'a, K, V> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<'a, K: 'a, V: 'a> FusedIterator for Keys<'a, K, V> {}
