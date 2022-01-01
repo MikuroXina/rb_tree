@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod balance;
+pub mod entry;
 mod iter;
 mod mem;
 mod node;

@@ -98,6 +98,15 @@ impl<K, V> NodeRef<K, V> {
         &unsafe { self.0.as_ref() }.value
     }
 
+    pub fn insert<'a>(mut self, value: V) -> &'a mut V
+    where
+        K: 'a,
+        V: 'a,
+    {
+        unsafe { self.0.as_mut() }.value = value;
+        &mut unsafe { self.0.as_mut() }.value
+    }
+
     pub fn key_value<'a>(self) -> (&'a K, &'a V)
     where
         K: 'a,
