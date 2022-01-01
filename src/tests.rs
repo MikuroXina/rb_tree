@@ -27,7 +27,10 @@ fn retain() {
     tree.insert(3, ());
     tree.insert(5, ());
 
-    tree.retain(|k, _| k % 2 == 0);
+    assert_eq!(
+        tree.drain_filter(|k, _| k % 2 != 0).collect::<Vec<_>>(),
+        vec![(1, ()), (3, ()), (5, ())]
+    );
     assert_eq!(tree.remove(&1), None);
     assert_eq!(tree.remove(&2), Some(()));
     assert_eq!(tree.remove(&3), None);
