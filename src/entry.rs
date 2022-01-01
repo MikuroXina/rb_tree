@@ -6,6 +6,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 }
 
+#[derive(Debug)]
 pub struct Entry<'a, K, V> {
     key: K,
     tree: &'a mut RedBlackTree<K, V>,

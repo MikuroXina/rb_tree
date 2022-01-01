@@ -8,11 +8,10 @@ mod node;
 #[cfg(test)]
 mod tests;
 
-pub use iter::IntoIter;
-
+pub use iter::{IntoIter, Iter};
 use node::{ChildIndex, Node, NodeRef};
 
-use std::{borrow::Borrow, marker::PhantomData};
+use std::{borrow::Borrow, fmt, marker::PhantomData};
 
 pub struct RedBlackTree<K, V> {
     root: Option<NodeRef<K, V>>,
@@ -103,6 +102,12 @@ impl<K, V> Drop for RedBlackTree<K, V> {
     }
 }
 
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for RedBlackTree<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_map().entries(self.iter()).finish()
+    }
+}
+
 impl<K, V> Default for RedBlackTree<K, V> {
     fn default() -> Self {
         Self::new()
@@ -128,6 +133,10 @@ impl<K, V> RedBlackTree<K, V> {
 
     pub const fn len(&self) -> usize {
         self.len
+    }
+
+    pub fn iter(&self) -> Iter<K, V> {
+        self.into_iter()
     }
 }
 
