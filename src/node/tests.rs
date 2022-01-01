@@ -51,17 +51,25 @@ fn test_insert() {
 
     assert_eq!(n1.search(&4), Err((n1, ChildIndex::Right)));
     n1.set_child(ChildIndex::Right, Some(n4));
-    n1.balance_after_insert();
+    n4.balance_after_insert();
     assert_eq!(n1.search(&4), Ok(n4));
     assert_eq!(n1.children(), (None, Some(n4)));
     assert_eq!(n4.children(), (None, None));
     assert_eq!(n1.color(), Color::Black);
     assert_eq!(n4.color(), Color::Red);
 
+    // [ 1 ]
+    //    \
+    //   ( 4 )
+    //    /
+    // ( 2 )
     assert_eq!(n1.search(&2), Err((n4, ChildIndex::Left)));
     n4.set_child(ChildIndex::Left, Some(n2));
-    n1.balance_after_insert();
-    assert_eq!(n1.search(&2), Ok(n2));
+    n2.balance_after_insert();
+    //    [ 2 ]
+    //    /   \
+    // ( 1 ) ( 4 )
+    assert_eq!(n2.search(&2), Ok(n2));
     assert_eq!(n2.children(), (Some(n1), Some(n4)));
     assert_eq!(n1.children(), (None, None));
     assert_eq!(n4.children(), (None, None));
@@ -69,21 +77,26 @@ fn test_insert() {
     assert_eq!(n1.color(), Color::Red);
     assert_eq!(n4.color(), Color::Red);
 
+    //    [ 2 ]
+    //    /   \
+    // ( 1 ) ( 4 )
+    //         /
+    //      ( 3 )
+    assert_eq!(n2.search(&3), Err((n4, ChildIndex::Left)));
+    n4.set_child(ChildIndex::Left, Some(n3));
+    n3.balance_after_insert();
     //    ( 2 )
     //    /   \
-    // [ 1 ] [ 3 ]
-    //          \
-    //         ( 4 )
-    assert_eq!(n1.search(&3), Err((n2, ChildIndex::Right)));
-    n2.set_child(ChildIndex::Right, Some(n3));
-    n1.balance_after_insert();
-    assert_eq!(n1.search(&3), Ok(n3));
+    // [ 1 ] [ 4 ]
+    //         /
+    //      ( 3 )
+    assert_eq!(n2.search(&3), Ok(n3));
     assert_eq!(n1.children(), (None, None));
-    assert_eq!(n2.children(), (Some(n1), Some(n3)));
-    assert_eq!(n3.children(), (None, Some(n4)));
-    assert_eq!(n4.children(), (None, None));
+    assert_eq!(n2.children(), (Some(n1), Some(n4)));
+    assert_eq!(n3.children(), (None, None));
+    assert_eq!(n4.children(), (Some(n3), None));
     assert_eq!(n2.color(), Color::Red);
     assert_eq!(n1.color(), Color::Black);
-    assert_eq!(n3.color(), Color::Black);
-    assert_eq!(n4.color(), Color::Red);
+    assert_eq!(n4.color(), Color::Black);
+    assert_eq!(n3.color(), Color::Red);
 }
