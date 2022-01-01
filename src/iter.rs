@@ -250,3 +250,127 @@ impl<'a, K: 'a, V: 'a> ExactSizeIterator for IterMut<'a, K, V> {
 }
 
 impl<'a, K: 'a, V: 'a> FusedIterator for IterMut<'a, K, V> {}
+
+// keys iterator
+
+pub struct IntoKeys<K, V>(pub(super) IntoIter<K, V>);
+
+impl<K, V> Iterator for IntoKeys<K, V> {
+    type Item = K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, _)| k)
+    }
+}
+
+impl<K, V> DoubleEndedIterator for IntoKeys<K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<K, V> ExactSizeIterator for IntoKeys<K, V> {
+    fn len(&self) -> usize {
+        self.0.length
+    }
+}
+
+impl<K, V> FusedIterator for IntoKeys<K, V> {}
+
+pub struct Keys<'a, K, V>(pub(super) Iter<'a, K, V>);
+
+impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
+    type Item = &'a K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, _)| k)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> ExactSizeIterator for Keys<'a, K, V> {
+    fn len(&self) -> usize {
+        self.0.length
+    }
+}
+
+impl<'a, K: 'a, V: 'a> FusedIterator for Keys<'a, K, V> {}
+
+// values iterator
+
+pub struct IntoValues<K, V>(pub(super) IntoIter<K, V>);
+
+impl<K, V> Iterator for IntoValues<K, V> {
+    type Item = K;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(k, _)| k)
+    }
+}
+
+impl<K, V> DoubleEndedIterator for IntoValues<K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(k, _)| k)
+    }
+}
+
+impl<K, V> ExactSizeIterator for IntoValues<K, V> {
+    fn len(&self) -> usize {
+        self.0.length
+    }
+}
+
+impl<K, V> FusedIterator for IntoValues<K, V> {}
+
+pub struct Values<'a, K, V>(pub(super) Iter<'a, K, V>);
+
+impl<'a, K: 'a, V: 'a> Iterator for Values<'a, K, V> {
+    type Item = &'a V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(_, v)| v)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Values<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(_, v)| v)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> ExactSizeIterator for Values<'a, K, V> {
+    fn len(&self) -> usize {
+        self.0.length
+    }
+}
+
+impl<'a, K: 'a, V: 'a> FusedIterator for Values<'a, K, V> {}
+
+pub struct ValuesMut<'a, K, V>(pub(super) IterMut<'a, K, V>);
+
+impl<'a, K: 'a, V: 'a> Iterator for ValuesMut<'a, K, V> {
+    type Item = &'a mut V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next().map(|(_, v)| v)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for ValuesMut<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back().map(|(_, v)| v)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> ExactSizeIterator for ValuesMut<'a, K, V> {
+    fn len(&self) -> usize {
+        self.0.length
+    }
+}
+
+impl<'a, K: 'a, V: 'a> FusedIterator for ValuesMut<'a, K, V> {}
