@@ -87,13 +87,6 @@ impl<K, V> NodeRef<K, V> {
         unsafe { self.0.as_ref() }.key.borrow()
     }
 
-    pub fn value<'a>(self) -> &'a V
-    where
-        K: 'a,
-    {
-        &unsafe { self.0.as_ref() }.value
-    }
-
     pub fn insert<'a>(mut self, value: V) -> &'a mut V
     where
         K: 'a,
@@ -172,10 +165,6 @@ impl<K, V> NodeRef<K, V> {
         let index = self.index_on_parent()?;
         let sibling = self.sibling()?;
         sibling.child(!index)
-    }
-
-    pub fn children(self) -> (Option<Self>, Option<Self>) {
-        unsafe { self.0.as_ref() }.children
     }
 
     pub fn child(self, idx: ChildIndex) -> Option<Self> {
