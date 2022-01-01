@@ -168,6 +168,26 @@ where
     }
 }
 
+impl<K: PartialEq, V: PartialEq> PartialEq for RedBlackTree<K, V> {
+    fn eq(&self, other: &Self) -> bool {
+        self.len == other.len && self.iter().zip(other.iter()).all(|(a, b)| a == b)
+    }
+}
+
+impl<K: Eq, V: Eq> Eq for RedBlackTree<K, V> {}
+
+impl<K: PartialOrd, V: PartialOrd> PartialOrd for RedBlackTree<K, V> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.iter().partial_cmp(other.iter())
+    }
+}
+
+impl<K: Ord, V: Ord> Ord for RedBlackTree<K, V> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.iter().cmp(other.iter())
+    }
+}
+
 impl<K, V> RedBlackTree<K, V> {
     pub const fn new() -> Self {
         Self {
