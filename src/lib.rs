@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod balance;
+pub mod drain;
 pub mod entry;
 mod iter;
 mod mem;
@@ -243,5 +244,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         Q: Ord + ?Sized,
     {
         self.get(key).is_some()
+    }
+
+    pub fn retain<F: FnMut(&K, &mut V) -> bool>(&mut self, mut f: F) {
+        self.drain_filter(move |k, v| !f(k, v));
     }
 }
