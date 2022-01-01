@@ -10,7 +10,7 @@ mod tests;
 pub use iter::{IntoIter, IntoKeys, IntoValues, Iter, IterMut, Keys, Values, ValuesMut};
 use node::{ChildIndex, Node, NodeRef};
 
-use std::{borrow::Borrow, fmt, hash, marker::PhantomData};
+use std::{borrow::Borrow, fmt, hash, marker::PhantomData, ops};
 
 pub struct RedBlackTree<K, V> {
     root: Option<NodeRef<K, V>>,
@@ -143,6 +143,28 @@ impl<K: hash::Hash, V: hash::Hash> hash::Hash for RedBlackTree<K, V> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.len.hash(state);
         self.iter().for_each(|e| e.hash(state));
+    }
+}
+
+impl<K, Q, V> ops::Index<&'_ Q> for RedBlackTree<K, V>
+where
+    K: Borrow<Q> + Ord,
+    Q: Ord + ?Sized,
+{
+    type Output = V;
+
+    fn index(&self, index: &'_ Q) -> &Self::Output {
+        self.get(index).expect("no entry found for key")
+    }
+}
+
+impl<K, Q, V> ops::IndexMut<&'_ Q> for RedBlackTree<K, V>
+where
+    K: Borrow<Q> + Ord,
+    Q: Ord + ?Sized,
+{
+    fn index_mut(&mut self, index: &'_ Q) -> &mut Self::Output {
+        self.get_mut(index).expect("no entry found for key")
     }
 }
 
