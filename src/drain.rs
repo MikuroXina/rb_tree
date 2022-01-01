@@ -46,15 +46,15 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let current = self.current?;
-        let (k, v) = current.key_value_mut();
-        self.current = current
-            .child(ChildIndex::Right)
-            .or_else(|| current.parent());
-        if (self.pred)(k, v) {
-            self.tree.remove_entry(k)
-        } else {
-            None
+        loop {
+            let current = self.current?;
+            let (k, v) = current.key_value_mut();
+            self.current = current
+                .child(ChildIndex::Right)
+                .or_else(|| current.parent());
+            if (self.pred)(k, v) {
+                return self.tree.remove_entry(k);
+            }
         }
     }
 
