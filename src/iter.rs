@@ -129,6 +129,19 @@ impl<'a, K: 'a, V: 'a> IntoIterator for &'a RedBlackTree<K, V> {
     }
 }
 
+impl<'a, K, V> Clone for Iter<'a, K, V> {
+    fn clone(&self) -> Self {
+        Self {
+            range: RefLeafRange {
+                start: self.range.start,
+                end: self.range.end,
+                _phantom: PhantomData,
+            },
+            length: self.length,
+        }
+    }
+}
+
 impl<'a, K: 'a, V: 'a> Iterator for Iter<'a, K, V> {
     type Item = (&'a K, &'a V);
 
