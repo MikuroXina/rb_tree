@@ -102,6 +102,12 @@ impl<K, V> Drop for RedBlackTree<K, V> {
     }
 }
 
+impl<K, V> Default for RedBlackTree<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<K, V> RedBlackTree<K, V> {
     pub const fn new() -> Self {
         Self {
