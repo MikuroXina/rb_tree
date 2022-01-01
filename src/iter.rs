@@ -173,3 +173,80 @@ impl<'a, K: 'a, V: 'a> ExactSizeIterator for Iter<'a, K, V> {
 }
 
 impl<'a, K: 'a, V: 'a> FusedIterator for Iter<'a, K, V> {}
+
+struct MutLeafRange<'a, K, V> {
+    start: Option<NodeRef<K, V>>,
+    end: Option<NodeRef<K, V>>,
+    _phantom: PhantomData<&'a mut ()>,
+}
+
+impl<'a, K, V> MutLeafRange<'a, K, V> {
+    fn cut_left(&mut self) -> Option<(&'a K, &'a mut V)> {
+        let start = self.start?;
+        let next = start.child(ChildIndex::Right).or_else(|| start.parent())?;
+        self.start.replace(next).map(|p| p.key_value_mut())
+    }
+
+    fn cut_right(&mut self) -> Option<(&'a K, &'a mut V)> {
+        let end = self.end?;
+        let next = end.child(ChildIndex::Left).or_else(|| end.parent())?;
+        self.end.replace(next).map(|p| p.key_value_mut())
+    }
+}
+
+pub struct IterMut<'a, K, V> {
+    range: MutLeafRange<'a, K, V>,
+    length: usize,
+}
+
+impl<'a, K: 'a, V: 'a> IntoIterator for &'a mut RedBlackTree<K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    type IntoIter = IterMut<'a, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let start = self.first_node();
+        let end = self.last_node();
+        let length = self.len;
+        IterMut {
+            range: MutLeafRange {
+                start,
+                end,
+                _phantom: PhantomData,
+            },
+            length,
+        }
+    }
+}
+
+impl<'a, K: 'a, V: 'a> Iterator for IterMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_left()
+        }
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for IterMut<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right()
+        }
+    }
+}
+
+impl<'a, K: 'a, V: 'a> ExactSizeIterator for IterMut<'a, K, V> {
+    fn len(&self) -> usize {
+        self.length
+    }
+}
+
+impl<'a, K: 'a, V: 'a> FusedIterator for IterMut<'a, K, V> {}

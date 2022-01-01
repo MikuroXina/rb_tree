@@ -8,7 +8,7 @@ mod node;
 #[cfg(test)]
 mod tests;
 
-pub use iter::{IntoIter, Iter};
+pub use iter::{IntoIter, Iter, IterMut};
 use node::{ChildIndex, Node, NodeRef};
 
 use std::{borrow::Borrow, fmt, marker::PhantomData};
@@ -136,6 +136,10 @@ impl<K, V> RedBlackTree<K, V> {
     }
 
     pub fn iter(&self) -> Iter<K, V> {
+        self.into_iter()
+    }
+
+    pub fn iter_mut(&mut self) -> IterMut<K, V> {
         self.into_iter()
     }
 }
