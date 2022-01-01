@@ -626,6 +626,20 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             _phantom: PhantomData,
         })
     }
+
+    pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V>
+    where
+        I: Ord + ?Sized,
+        K: borrow::Borrow<I>,
+        R: ops::RangeBounds<I>,
+    {
+        let (start, end) = self.search_range(&range);
+        RangeMut(MutLeafRange {
+            start,
+            end,
+            _phantom: PhantomData,
+        })
+    }
 }
 
 pub struct Range<'a, K, V>(RefLeafRange<'a, K, V>);
@@ -673,3 +687,44 @@ impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Range<'a, K, V> {
 }
 
 impl<'a, K: 'a, V: 'a> FusedIterator for Range<'a, K, V> {}
+
+pub struct RangeMut<'a, K, V>(MutLeafRange<'a, K, V>);
+
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for RangeMut<'_, K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Range(RefLeafRange {
+            start: self.0.start,
+            end: self.0.end,
+            _phantom: PhantomData,
+        })
+        .fmt(f)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> Iterator for RangeMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.cut_left()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.0.cut_right()
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(self) -> Option<Self::Item> {
+        self.last()
+    }
+}
+
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for RangeMut<'a, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.cut_right()
+    }
+}
+
+impl<'a, K: 'a, V: 'a> FusedIterator for RangeMut<'a, K, V> {}
