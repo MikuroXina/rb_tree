@@ -63,6 +63,19 @@ impl<K, V> Iterator for IntoIter<K, V> {
             self.range.cut_left()
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right()
+        }
+    }
 }
 
 impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
@@ -153,6 +166,27 @@ impl<'a, K: 'a, V: 'a> Iterator for Iter<'a, K, V> {
             self.range.cut_left()
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right()
+        }
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(self) -> Option<Self::Item> {
+        self.last()
+    }
 }
 
 impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Iter<'a, K, V> {
@@ -230,6 +264,27 @@ impl<'a, K: 'a, V: 'a> Iterator for IterMut<'a, K, V> {
             self.range.cut_left()
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right()
+        }
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(self) -> Option<Self::Item> {
+        self.last()
+    }
 }
 
 impl<'a, K: 'a, V: 'a> DoubleEndedIterator for IterMut<'a, K, V> {
@@ -261,6 +316,22 @@ impl<K, V> Iterator for IntoKeys<K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, _)| k)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
 }
 
 impl<K, V> DoubleEndedIterator for IntoKeys<K, V> {
@@ -284,6 +355,22 @@ impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, _)| k)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+
+    fn max(mut self) -> Option<Self::Item> {
+        self.next_back()
     }
 }
 
@@ -311,6 +398,14 @@ impl<K, V> Iterator for IntoValues<K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(k, _)| k)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
 }
 
 impl<K, V> DoubleEndedIterator for IntoValues<K, V> {
@@ -335,6 +430,14 @@ impl<'a, K: 'a, V: 'a> Iterator for Values<'a, K, V> {
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(_, v)| v)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
 }
 
 impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Values<'a, K, V> {
@@ -358,6 +461,14 @@ impl<'a, K: 'a, V: 'a> Iterator for ValuesMut<'a, K, V> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next().map(|(_, v)| v)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
     }
 }
 
@@ -547,11 +658,11 @@ impl<'a, K: 'a, V: 'a> Iterator for Range<'a, K, V> {
     }
 
     fn min(mut self) -> Option<Self::Item> {
-        self.0.cut_left()
+        self.next()
     }
 
-    fn max(mut self) -> Option<Self::Item> {
-        self.0.cut_right()
+    fn max(self) -> Option<Self::Item> {
+        self.last()
     }
 }
 
