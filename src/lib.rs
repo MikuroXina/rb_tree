@@ -43,6 +43,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         target.set_child(idx, Some(new_node));
 
         new_node.balance_after_insert();
+
+        let mut new_root = new_node;
+        while let Some(parent) = new_root.parent() {
+            new_root = parent;
+        }
+        self.root = Some(new_root);
     }
 
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
