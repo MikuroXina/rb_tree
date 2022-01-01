@@ -111,6 +111,10 @@ impl<K, V> RedBlackTree<K, V> {
         }
     }
 
+    pub fn clear(&mut self) {
+        *self = Self::new();
+    }
+
     pub const fn is_empty(&self) -> bool {
         self.root.is_none()
     }
@@ -147,15 +151,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        if self.is_empty() {
-            return None;
-        }
-        let found = self.search_node(key).ok()?;
-        self.len -= 1;
-        Some(self.remove_node(found).1)
+        self.remove_entry(key).map(|(_, v)| v)
     }
 
-    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    pub fn remove_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
         Q: Ord + ?Sized,
@@ -163,6 +162,46 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         if self.is_empty() {
             return None;
         }
-        self.search_node(key).ok().map(|n| n.value())
+        let found = self.search_node(key).ok()?;
+        self.len -= 1;
+        Some(self.remove_node(found))
+    }
+
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.get_key_value(key).map(|(_, v)| v)
+    }
+
+    pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        if self.is_empty() {
+            return None;
+        }
+        self.search_node(key).ok().map(|n| n.value_mut())
+    }
+
+    pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        if self.is_empty() {
+            return None;
+        }
+        self.search_node(key).ok().map(|n| n.key_value())
+    }
+
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.get(key).is_some()
     }
 }
