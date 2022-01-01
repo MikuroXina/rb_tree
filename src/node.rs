@@ -78,6 +78,10 @@ impl<K, V> NodeRef<K, V> {
         self.0
     }
 
+    pub fn make_root(mut self) {
+        unsafe { self.0.as_mut() }.parent = None;
+    }
+
     pub fn key<'a, Q>(self) -> &'a Q
     where
         K: Borrow<Q> + 'a,

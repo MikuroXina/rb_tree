@@ -23,6 +23,7 @@ impl<K, V> RedBlackTree<K, V> {
             // update `parent`'s child
             parent.set_child(idx, Some(pivot));
         } else {
+            pivot.make_root();
             self.root = Some(pivot);
         }
         // update `pivot`'s child
