@@ -10,7 +10,7 @@ mod tests;
 pub use iter::{IntoIter, IntoKeys, IntoValues, Iter, IterMut, Keys, Values, ValuesMut};
 use node::{ChildIndex, Node, NodeRef};
 
-use std::{borrow::Borrow, fmt, marker::PhantomData};
+use std::{borrow::Borrow, fmt, hash, marker::PhantomData};
 
 pub struct RedBlackTree<K, V> {
     root: Option<NodeRef<K, V>>,
@@ -136,6 +136,13 @@ impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RedBlackTr
         for (k, v) in iter {
             self.insert(*k, *v);
         }
+    }
+}
+
+impl<K: hash::Hash, V: hash::Hash> hash::Hash for RedBlackTree<K, V> {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.len.hash(state);
+        self.iter().for_each(|e| e.hash(state));
     }
 }
 
