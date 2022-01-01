@@ -33,7 +33,7 @@ impl<K, V> RedBlackTree<K, V> {
         pivot
     }
 
-    pub fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
+    pub(crate) fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
         loop {
             if target.parent().is_none() || target.parent().unwrap().is_black() {
                 // if the parent is black or none, the tree is well balanced.
@@ -100,7 +100,7 @@ impl<K, V> RedBlackTree<K, V> {
         }
     }
 
-    pub fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
+    pub(crate) fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
         while let Some(parent) = target.parent() {
             let sibling = target.sibling();
             let close_nephew = target.close_nephew();
