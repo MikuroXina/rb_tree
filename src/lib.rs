@@ -113,6 +113,16 @@ impl<K, V> Default for RedBlackTree<K, V> {
     }
 }
 
+impl<K: Ord, V> FromIterator<(K, V)> for RedBlackTree<K, V> {
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
+        let mut tree = Self::new();
+        for (k, v) in iter {
+            tree.insert(k, v);
+        }
+        tree
+    }
+}
+
 impl<K, V> RedBlackTree<K, V> {
     pub const fn new() -> Self {
         Self {
