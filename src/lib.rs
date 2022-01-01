@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod balance;
 pub mod drain;
 pub mod entry;

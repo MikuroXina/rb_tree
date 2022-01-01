@@ -74,10 +74,6 @@ impl<K, V> NodeRef<K, V> {
         (this.key, this.value)
     }
 
-    fn as_raw(self) -> NonNull<Node<K, V>> {
-        self.0
-    }
-
     pub fn make_root(mut self) {
         unsafe { self.0.as_mut() }.parent = None;
     }
