@@ -81,12 +81,7 @@ impl<K, V, R> RefLeafRange<K, V, R>
 where
     K: Ord,
 {
-    fn new<I>(tree: &RedBlackTree<K, V>, range: R) -> Self
-    where
-        K: borrow::Borrow<I>,
-        I: Ord + ?Sized,
-        R: ops::RangeBounds<I>,
-    {
+    fn new(tree: &RedBlackTree<K, V>, range: R) -> Self {
         Self {
             current: tree.root,
             range: SearchRange { range },
