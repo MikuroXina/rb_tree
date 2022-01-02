@@ -67,6 +67,7 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
+            // FIXME: avoid visited nodes
             let current = self.current?;
             let (k, v) = current.key_value_mut();
             self.current = current

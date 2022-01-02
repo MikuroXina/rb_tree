@@ -39,6 +39,7 @@ struct RefLeafRange<'a, K, V> {
 
 impl<'a, K, V> RefLeafRange<'a, K, V> {
     fn cut_left(&mut self) -> Option<(&'a K, &'a V)> {
+        // FIXME: avoid visited nodes
         let start = self.start?;
         let next = start.child(ChildIndex::Right).or_else(|| start.parent());
         std::mem::replace(&mut self.start, next).map(|p| p.key_value())
@@ -59,6 +60,7 @@ struct MutLeafRange<'a, K, V> {
 
 impl<'a, K, V> MutLeafRange<'a, K, V> {
     fn cut_left(&mut self) -> Option<(&'a K, &'a mut V)> {
+        // FIXME: avoid visited nodes
         let start = self.start?;
         let next = start.child(ChildIndex::Right).or_else(|| start.parent());
         std::mem::replace(&mut self.start, next).map(|p| p.key_value_mut())
