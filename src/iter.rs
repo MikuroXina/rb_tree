@@ -34,23 +34,6 @@ impl<K, V> LeafRange<K, V> {
     }
 }
 
-enum SearchBound<I> {
-    Included(I),
-    Excluded(I),
-    AllIncluded,
-    AllExcluded,
-}
-
-impl<I> From<ops::Bound<I>> for SearchBound<I> {
-    fn from(bound: ops::Bound<I>) -> Self {
-        match bound {
-            ops::Bound::Included(idx) => Self::Included(idx),
-            ops::Bound::Excluded(idx) => Self::Excluded(idx),
-            ops::Bound::Unbounded => Self::AllIncluded,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 struct SearchRange<R> {
     range: R,
@@ -62,19 +45,18 @@ impl<R> SearchRange<R> {
         K: ?Sized + Ord,
         R: ops::RangeBounds<K>,
     {
-        let lower = self.range.start_bound().into();
-        let upper = self.range.end_bound().into();
+        use ops::Bound::*;
+        let lower = self.range.start_bound();
+        let upper = self.range.end_bound();
         let is_lower_ok = match lower {
-            SearchBound::Included(b) => b <= key,
-            SearchBound::Excluded(b) => b < key,
-            SearchBound::AllIncluded => true,
-            SearchBound::AllExcluded => false,
+            Included(b) => b <= key,
+            Excluded(b) => b < key,
+            Unbounded => true,
         };
         let is_upper_ok = match upper {
-            SearchBound::Included(b) => key <= b,
-            SearchBound::Excluded(b) => key < b,
-            SearchBound::AllIncluded => true,
-            SearchBound::AllExcluded => false,
+            Included(b) => key <= b,
+            Excluded(b) => key < b,
+            Unbounded => true,
         };
         is_lower_ok && is_upper_ok
     }
