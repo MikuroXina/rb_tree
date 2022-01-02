@@ -1,174 +1,153 @@
-mod entry;
 mod keys;
+mod leaf;
 mod range;
 mod values;
 
-pub use entry::*;
 pub use keys::*;
+pub use leaf::*;
 pub use range::*;
 pub use values::*;
 
-use std::{borrow, ops};
+use std::iter::FusedIterator;
 
-use crate::{
-    node::{ChildIndex, NodeRef},
-    RedBlackTree,
-};
+use crate::RedBlackTree;
 
-struct LeafRange<K, V> {
-    start: Option<NodeRef<K, V>>,
-    end: Option<NodeRef<K, V>>,
+pub struct IntoIter<K, V> {
+    range: LeafRange<K, V>,
+    length: usize,
 }
 
-impl<K, V> LeafRange<K, V> {
-    fn cut_left(&mut self) -> Option<(K, V)> {
-        let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
-        std::mem::replace(&mut self.start, next).map(|p| unsafe { p.deallocate() })
+impl<K: Ord, V> RedBlackTree<K, V> {
+    /// Gets an iterator over the entries of the map, sorted by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(3, "c");
+    /// a.insert(2, "b");
+    /// a.insert(1, "a");
+    ///
+    /// let mut iter = a.iter();
+    /// assert_eq!(iter.next(), Some((&1, &"a")));
+    /// assert_eq!(iter.next(), Some((&2, &"b")));
+    /// assert_eq!(iter.next(), Some((&3, &"c")));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub fn iter(&self) -> Range<K, V> {
+        self.range(..)
     }
 
-    fn cut_right(&mut self) -> Option<(K, V)> {
-        let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
-        std::mem::replace(&mut self.end, next).map(|p| unsafe { p.deallocate() })
+    /// Gets a iterator over the entries of the map, sorted by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut map = RedBlackTree::new();
+    /// map.insert("a", 1);
+    /// map.insert("b", 2);
+    /// map.insert("c", 3);
+    ///
+    /// for (key, value) in map.iter_mut() {
+    ///     if key != &"a" {
+    ///         *value += 10;
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(map[&"a"], 1);
+    /// assert_eq!(map[&"b"], 12);
+    /// assert_eq!(map[&"c"], 13);
+    /// ```
+    pub fn iter_mut(&mut self) -> RangeMut<K, V> {
+        self.range_mut(..)
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum PreviousStep {
-    Parent,
-    LeftChild,
-    RightChild,
-}
+impl<K, V> IntoIterator for RedBlackTree<K, V> {
+    type Item = (K, V);
 
-struct RefLeafRange<K, V> {
-    start: Option<NodeRef<K, V>>,
-    start_prev: PreviousStep,
-    end: Option<NodeRef<K, V>>,
-    end_prev: PreviousStep,
-}
+    type IntoIter = IntoIter<K, V>;
 
-impl<K, V> Clone for RefLeafRange<K, V> {
-    fn clone(&self) -> Self {
-        Self { ..*self }
+    fn into_iter(self) -> Self::IntoIter {
+        let length = self.len;
+        IntoIter {
+            range: LeafRange::new(self),
+            length,
+        }
     }
 }
 
-impl<K, V> RefLeafRange<K, V> {
-    fn new<R, Q>(tree: &RedBlackTree<K, V>, range: R) -> Self
-    where
-        K: Ord + borrow::Borrow<Q>,
-        Q: Ord + ?Sized,
-        R: ops::RangeBounds<Q>,
-    {
-        let root = tree.root;
-        Self {
-            start: root.map(|r| search_lower(r, &range)),
-            start_prev: PreviousStep::Parent,
-            end: root.map(|r| search_upper(r, &range)),
-            end_prev: PreviousStep::Parent,
+impl<K, V> Drop for IntoIter<K, V> {
+    fn drop(&mut self) {
+        for _ in self {}
+    }
+}
+
+impl<K, V> Iterator for IntoIter<K, V> {
+    type Item = (K, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_left()
         }
     }
 
-    fn cut_left(&mut self) -> Option<NodeRef<K, V>> {
-        while let Some(curr) = self.start {
-            match self.start_prev {
-                PreviousStep::Parent => {
-                    // descended
-                    if let Some(left) = curr.left() {
-                        // go to left
-                        self.start = Some(left);
-                        continue;
-                    }
-                    self.start_prev = PreviousStep::LeftChild;
-                }
-                PreviousStep::LeftChild => {
-                    // ascended from left
-                    if let Some(right) = curr.right() {
-                        // go to right
-                        self.start_prev = PreviousStep::Parent;
-                        self.start = Some(right);
-                    } else {
-                        self.start_prev = PreviousStep::RightChild;
-                    }
-                    return Some(curr);
-                }
-                PreviousStep::RightChild => {
-                    // ascended from right, so ascend once more
-                    self.start = curr.parent();
-                }
-            }
-        }
-        None
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
     }
 
-    fn cut_right(&mut self) -> Option<NodeRef<K, V>> {
-        while let Some(curr) = self.end {
-            match self.end_prev {
-                PreviousStep::Parent => {
-                    // descended
-                    if let Some(right) = curr.right() {
-                        // go to right
-                        self.end = Some(right);
-                        continue;
-                    }
-                    self.end_prev = PreviousStep::RightChild;
-                }
-                PreviousStep::RightChild => {
-                    // ascended from right
-                    if let Some(left) = curr.left() {
-                        // go to left
-                        self.end_prev = PreviousStep::Parent;
-                        self.end = Some(left);
-                    } else {
-                        self.end_prev = PreviousStep::LeftChild;
-                    }
-                    return Some(curr);
-                }
-                PreviousStep::LeftChild => {
-                    // ascended from left, so ascend once more
-                    self.end = curr.parent();
-                }
-            }
+    fn last(mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right()
         }
-        None
     }
 }
 
-fn search_lower<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> NodeRef<K, V>
-where
-    K: Ord + borrow::Borrow<Q>,
-    Q: ?Sized + Ord,
-    R: ops::RangeBounds<Q>,
-{
-    let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
-    let mut current = root;
-    while let Some(next) = current
-        .left()
-        .filter(contains_key)
-        .or_else(|| current.right())
-        .filter(contains_key)
-    {
-        current = next;
+impl<K, V> DoubleEndedIterator for IntoIter<K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right()
+        }
     }
-    current
 }
 
-fn search_upper<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> NodeRef<K, V>
-where
-    K: Ord + borrow::Borrow<Q>,
-    Q: ?Sized + Ord,
-    R: ops::RangeBounds<Q>,
-{
-    let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
-    let mut current = root;
-    while let Some(next) = current
-        .right()
-        .filter(contains_key)
-        .or_else(|| current.left())
-        .filter(contains_key)
-    {
-        current = next;
+impl<K, V> ExactSizeIterator for IntoIter<K, V> {
+    fn len(&self) -> usize {
+        self.length
     }
-    current
+}
+
+impl<K, V> FusedIterator for IntoIter<K, V> {}
+
+impl<'a, K: Ord, V> IntoIterator for &'a RedBlackTree<K, V> {
+    type Item = (&'a K, &'a V);
+
+    type IntoIter = Range<'a, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.range(..)
+    }
+}
+
+impl<'a, K: Ord, V> IntoIterator for &'a mut RedBlackTree<K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    type IntoIter = RangeMut<'a, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.range_mut(..)
+    }
 }
