@@ -1,4 +1,4 @@
-use std::{iter::FusedIterator, ops::RangeFull};
+use std::iter::FusedIterator;
 
 use crate::RedBlackTree;
 
@@ -84,7 +84,7 @@ impl<K, V> ExactSizeIterator for IntoKeys<K, V> {
 
 impl<K, V> FusedIterator for IntoKeys<K, V> {}
 
-pub struct Keys<'a, K, V>(Range<'a, K, V, RangeFull>, usize);
+pub struct Keys<'a, K, V>(Range<'a, K, V>, usize);
 
 impl<'a, K: 'a + Ord, V: 'a> Iterator for Keys<'a, K, V> {
     type Item = &'a K;

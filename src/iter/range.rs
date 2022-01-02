@@ -22,7 +22,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// }
     /// assert_eq!(map.range(4..).next(), Some((&5, &"b")));
     /// ```
-    pub fn range<I, R>(&self, range: R) -> Range<K, V, R>
+    pub fn range<I, R>(&self, range: R) -> Range<K, V>
     where
         I: Ord + ?Sized,
         K: borrow::Borrow<I>,
@@ -49,7 +49,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     ///     println!("{} => {}", name, balance);
     /// }
     /// ```
-    pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V, R>
+    pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V>
     where
         I: Ord + ?Sized,
         K: borrow::Borrow<I>,
@@ -59,29 +59,27 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 }
 
-pub struct Range<'a, K, V, R>(RefLeafRange<K, V, R>, PhantomData<&'a ()>);
+pub struct Range<'a, K, V>(RefLeafRange<K, V>, PhantomData<&'a ()>);
 
-impl<K, V, R: Clone> Clone for Range<'_, K, V, R> {
+impl<K, V> Clone for Range<'_, K, V> {
     fn clone(&self) -> Self {
         Self(self.0.clone(), PhantomData)
     }
 }
 
-impl<K: fmt::Debug, V: fmt::Debug, R> fmt::Debug for Range<'_, K, V, R>
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Range<'_, K, V>
 where
     K: Ord,
-    R: Clone + ops::RangeBounds<K>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.clone()).finish()
     }
 }
 
-impl<'a, K, V, R> Iterator for Range<'a, K, V, R>
+impl<'a, K, V> Iterator for Range<'a, K, V>
 where
     K: Ord + 'a,
     V: 'a,
-    R: ops::RangeBounds<K>,
 {
     type Item = (&'a K, &'a V);
 
@@ -102,42 +100,38 @@ where
     }
 }
 
-impl<'a, K, V, R> DoubleEndedIterator for Range<'a, K, V, R>
+impl<'a, K, V> DoubleEndedIterator for Range<'a, K, V>
 where
     K: Ord + 'a,
     V: 'a,
-    R: ops::RangeBounds<K>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.cut_right().map(|n| n.key_value())
     }
 }
 
-impl<'a, K, V, R> FusedIterator for Range<'a, K, V, R>
+impl<'a, K, V> FusedIterator for Range<'a, K, V>
 where
     K: Ord + 'a,
     V: 'a,
-    R: ops::RangeBounds<K>,
 {
 }
 
-pub struct RangeMut<'a, K, V, I>(RefLeafRange<K, V, I>, PhantomData<&'a mut ()>);
+pub struct RangeMut<'a, K, V>(RefLeafRange<K, V>, PhantomData<&'a mut ()>);
 
-impl<K: fmt::Debug, V: fmt::Debug, R> fmt::Debug for RangeMut<'_, K, V, R>
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for RangeMut<'_, K, V>
 where
     K: Ord,
-    R: Clone + ops::RangeBounds<K>,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Range(self.0.clone(), PhantomData).fmt(f)
     }
 }
 
-impl<'a, K, V, R> Iterator for RangeMut<'a, K, V, R>
+impl<'a, K, V> Iterator for RangeMut<'a, K, V>
 where
     K: Ord + 'a,
     V: 'a,
-    R: ops::RangeBounds<K>,
 {
     type Item = (&'a K, &'a mut V);
 
@@ -158,21 +152,19 @@ where
     }
 }
 
-impl<'a, K, V, R> DoubleEndedIterator for RangeMut<'a, K, V, R>
+impl<'a, K, V> DoubleEndedIterator for RangeMut<'a, K, V>
 where
     K: Ord + 'a,
     V: 'a,
-    R: ops::RangeBounds<K>,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.cut_right().map(|n| n.key_value_mut())
     }
 }
 
-impl<'a, K, V, R> FusedIterator for RangeMut<'a, K, V, R>
+impl<'a, K, V> FusedIterator for RangeMut<'a, K, V>
 where
     K: Ord + 'a,
     V: 'a,
-    R: ops::RangeBounds<K>,
 {
 }

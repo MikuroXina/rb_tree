@@ -166,6 +166,14 @@ impl<K, V> NodeRef<K, V> {
         }
     }
 
+    pub fn left(self) -> Option<Self> {
+        self.child(ChildIndex::Left)
+    }
+
+    pub fn right(self) -> Option<Self> {
+        self.child(ChildIndex::Right)
+    }
+
     pub fn set_child(mut self, idx: ChildIndex, new_child: Option<Self>) {
         let this = unsafe { self.0.as_mut() };
         if let Some(mut child) = new_child {

@@ -34,126 +34,141 @@ impl<K, V> LeafRange<K, V> {
     }
 }
 
-#[derive(Debug, Clone)]
-struct SearchRange<R> {
-    range: R,
+#[derive(Debug, Clone, Copy)]
+enum PreviousStep {
+    Parent,
+    LeftChild,
+    RightChild,
 }
 
-impl<R> SearchRange<R> {
-    fn contains<K>(&self, key: &K) -> bool
-    where
-        K: ?Sized + Ord,
-        R: ops::RangeBounds<K>,
-    {
-        use ops::Bound::*;
-        let lower = self.range.start_bound();
-        let upper = self.range.end_bound();
-        let is_lower_ok = match lower {
-            Included(b) => b <= key,
-            Excluded(b) => b < key,
-            Unbounded => true,
-        };
-        let is_upper_ok = match upper {
-            Included(b) => key <= b,
-            Excluded(b) => key < b,
-            Unbounded => true,
-        };
-        is_lower_ok && is_upper_ok
-    }
+struct RefLeafRange<K, V> {
+    start: Option<NodeRef<K, V>>,
+    start_prev: PreviousStep,
+    end: Option<NodeRef<K, V>>,
+    end_prev: PreviousStep,
 }
 
-struct RefLeafRange<K, V, R> {
-    current: Option<NodeRef<K, V>>,
-    range: SearchRange<R>,
-    is_climbing: bool,
-}
-
-impl<K, V, R: Clone> Clone for RefLeafRange<K, V, R> {
+impl<K, V> Clone for RefLeafRange<K, V> {
     fn clone(&self) -> Self {
-        Self {
-            range: self.range.clone(),
-            ..*self
-        }
+        Self { ..*self }
     }
 }
 
-impl<K, V, R> RefLeafRange<K, V, R>
-where
-    K: Ord,
-{
-    fn new(tree: &RedBlackTree<K, V>, range: R) -> Self {
+impl<K, V> RefLeafRange<K, V> {
+    fn new<R, Q>(tree: &RedBlackTree<K, V>, range: R) -> Self
+    where
+        K: Ord + borrow::Borrow<Q>,
+        Q: Ord + ?Sized,
+        R: ops::RangeBounds<Q>,
+    {
+        let root = tree.root;
         Self {
-            current: tree.root,
-            range: SearchRange { range },
-            is_climbing: false,
+            start: root.map(|r| search_lower(r, &range)),
+            start_prev: PreviousStep::Parent,
+            end: root.map(|r| search_upper(r, &range)),
+            end_prev: PreviousStep::Parent,
         }
     }
 
-    fn cut_left<Q>(&mut self) -> Option<NodeRef<K, V>>
-    where
-        K: borrow::Borrow<Q>,
-        Q: Ord + ?Sized,
-        R: ops::RangeBounds<Q>,
-    {
-        let mut current = self.current?;
-        let ret = if self.is_climbing {
-            if let Some(right) = current.child(ChildIndex::Right) {
-                self.current = Some(right);
-                self.is_climbing = false;
-            } else {
-                self.current = current.parent();
-            }
-            current
-        } else {
-            while let Some(left) = current.child(ChildIndex::Left) {
-                if !self.range.contains(left.key()) {
-                    break;
+    fn cut_left(&mut self) -> Option<NodeRef<K, V>> {
+        while let Some(curr) = self.start {
+            match self.start_prev {
+                PreviousStep::Parent => {
+                    // descended
+                    if let Some(left) = curr.left() {
+                        // go to left
+                        self.start = Some(left);
+                        continue;
+                    }
+                    self.start_prev = PreviousStep::LeftChild;
                 }
-                current = left;
+                PreviousStep::LeftChild => {
+                    // ascended from left
+                    if let Some(right) = curr.right() {
+                        // go to right
+                        self.start_prev = PreviousStep::Parent;
+                        self.start = Some(right);
+                    } else {
+                        self.start_prev = PreviousStep::RightChild;
+                    }
+                    return Some(curr);
+                }
+                PreviousStep::RightChild => {
+                    // ascended from right, so ascend once more
+                    self.start = curr.parent();
+                }
             }
-            self.current = current.parent();
-            self.is_climbing = true;
-            current
-        };
-        if self.range.contains(ret.key()) {
-            Some(ret)
-        } else {
-            self.current = None;
-            None
         }
+        None
     }
 
-    fn cut_right<Q>(&mut self) -> Option<NodeRef<K, V>>
-    where
-        K: borrow::Borrow<Q>,
-        Q: Ord + ?Sized,
-        R: ops::RangeBounds<Q>,
-    {
-        let mut current = self.current?;
-        let ret = if self.is_climbing {
-            if let Some(left) = current.child(ChildIndex::Left) {
-                self.current = Some(left);
-                self.is_climbing = false;
-            } else {
-                self.current = current.parent();
-            }
-            current
-        } else {
-            while let Some(right) = current.child(ChildIndex::Right) {
-                if !self.range.contains(right.key()) {
-                    break;
+    fn cut_right(&mut self) -> Option<NodeRef<K, V>> {
+        while let Some(curr) = self.end {
+            match self.end_prev {
+                PreviousStep::Parent => {
+                    // descended
+                    if let Some(right) = curr.right() {
+                        // go to right
+                        self.end = Some(right);
+                        continue;
+                    }
+                    self.end_prev = PreviousStep::RightChild;
                 }
-                current = right;
+                PreviousStep::RightChild => {
+                    // ascended from right
+                    if let Some(left) = curr.left() {
+                        // go to left
+                        self.end_prev = PreviousStep::Parent;
+                        self.end = Some(left);
+                    } else {
+                        self.end_prev = PreviousStep::LeftChild;
+                    }
+                    return Some(curr);
+                }
+                PreviousStep::LeftChild => {
+                    // ascended from left, so ascend once more
+                    self.end = curr.parent();
+                }
             }
-            self.current = current.parent();
-            self.is_climbing = true;
-            current
-        };
-        if self.range.contains(ret.key()) {
-            Some(ret)
-        } else {
-            self.current = None;
-            None
         }
+        None
     }
+}
+
+fn search_lower<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> NodeRef<K, V>
+where
+    K: Ord + borrow::Borrow<Q>,
+    Q: ?Sized + Ord,
+    R: ops::RangeBounds<Q>,
+{
+    let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
+    let mut current = root;
+    while let Some(next) = current
+        .left()
+        .filter(contains_key)
+        .or_else(|| current.right())
+        .filter(contains_key)
+    {
+        current = next;
+    }
+    current
+}
+
+fn search_upper<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> NodeRef<K, V>
+where
+    K: Ord + borrow::Borrow<Q>,
+    Q: ?Sized + Ord,
+    R: ops::RangeBounds<Q>,
+{
+    let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
+    let mut current = root;
+    while let Some(next) = current
+        .right()
+        .filter(contains_key)
+        .or_else(|| current.left())
+        .filter(contains_key)
+    {
+        current = next;
+    }
+    current
 }

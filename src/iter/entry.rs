@@ -1,4 +1,4 @@
-use std::{iter::FusedIterator, ops::RangeFull};
+use std::iter::FusedIterator;
 
 use crate::RedBlackTree;
 
@@ -28,7 +28,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(iter.next(), Some((&3, &"c")));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Range<K, V, RangeFull> {
+    pub fn iter(&self) -> Range<K, V> {
         self.range(..)
     }
 
@@ -54,7 +54,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map[&"b"], 12);
     /// assert_eq!(map[&"c"], 13);
     /// ```
-    pub fn iter_mut(&mut self) -> RangeMut<K, V, RangeFull> {
+    pub fn iter_mut(&mut self) -> RangeMut<K, V> {
         self.range_mut(..)
     }
 }
@@ -130,7 +130,7 @@ impl<K, V> FusedIterator for IntoIter<K, V> {}
 impl<'a, K: Ord, V> IntoIterator for &'a RedBlackTree<K, V> {
     type Item = (&'a K, &'a V);
 
-    type IntoIter = Range<'a, K, V, RangeFull>;
+    type IntoIter = Range<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.range(..)
@@ -140,7 +140,7 @@ impl<'a, K: Ord, V> IntoIterator for &'a RedBlackTree<K, V> {
 impl<'a, K: Ord, V> IntoIterator for &'a mut RedBlackTree<K, V> {
     type Item = (&'a K, &'a mut V);
 
-    type IntoIter = RangeMut<'a, K, V, RangeFull>;
+    type IntoIter = RangeMut<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
         self.range_mut(..)
