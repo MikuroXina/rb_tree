@@ -81,7 +81,10 @@ impl<K, V> RefLeafRange<K, V> {
                 }
                 PreviousStep::LeftChild => {
                     // ascended from left
-                    if let Some(right) = curr.right() {
+                    if curr.right() == self.end {
+                        // reached to end
+                        self.start = None;
+                    } else if let Some(right) = curr.right() {
                         // go to right
                         self.start_prev = PreviousStep::Parent;
                         self.start = Some(right);
@@ -113,7 +116,10 @@ impl<K, V> RefLeafRange<K, V> {
                 }
                 PreviousStep::RightChild => {
                     // ascended from right
-                    if let Some(left) = curr.left() {
+                    if curr.left() == self.start {
+                        // reached to start
+                        self.start = None;
+                    } else if let Some(left) = curr.left() {
                         // go to left
                         self.end_prev = PreviousStep::Parent;
                         self.end = Some(left);
