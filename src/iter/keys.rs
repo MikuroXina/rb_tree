@@ -16,8 +16,10 @@ impl<K, V> RedBlackTree<K, V> {
     /// a.insert(2, "b");
     /// a.insert(1, "a");
     ///
-    /// let keys: Vec<i32> = a.into_keys().collect();
-    /// assert_eq!(keys, [1, 2]);
+    /// let mut keys = a.into_keys();
+    /// assert_eq!(keys.next(), Some(1));
+    /// assert_eq!(keys.next(), Some(2));
+    /// assert_eq!(keys.next(), None);
     /// ```
     pub fn into_keys(self) -> IntoKeys<K, V> {
         IntoKeys(self.into_iter())

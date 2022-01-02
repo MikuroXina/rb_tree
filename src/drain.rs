@@ -23,8 +23,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// let evens: RedBlackTree<_, _> = map.drain_filter(|k, _| k % 2 == 0).collect();
     /// let odds = map;
     ///
-    /// assert!(evens.into_keys().eq(vec![0, 2, 4, 6]));
-    /// assert!(odds.into_keys().eq(vec![1, 3, 5, 7]));
+    /// assert_eq!(evens.into_keys().collect::<Vec<_>>(), vec![0, 2, 4, 6]);
+    /// assert_eq!(odds.into_keys().collect::<Vec<_>>(), vec![1, 3, 5, 7]);
     /// ```
     pub fn drain_filter<F: FnMut(&K, &mut V) -> bool>(&mut self, f: F) -> DrainFilter<K, V, F> {
         let current = self.first_node();

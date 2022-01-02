@@ -22,12 +22,11 @@ impl<K, V> RedBlackTree<K, V> {
     /// a.insert(2, "b");
     /// a.insert(1, "a");
     ///
-    /// for (key, value) in map.iter() {
-    ///     println!("{}: {}", key, value);
-    /// }
-    ///
-    /// let (first_key, first_value) = map.iter().next().unwrap();
-    /// assert_eq!((*first_key, *first_value), (1, "a"));
+    /// let mut iter = a.iter();
+    /// assert_eq!(iter.next(), Some((&1, &"a")));
+    /// assert_eq!(iter.next(), Some((&2, &"b")));
+    /// assert_eq!(iter.next(), Some((&3, &"c")));
+    /// assert_eq!(iter.next(), None);
     /// ```
     pub fn iter(&self) -> Iter<K, V> {
         self.into_iter()

@@ -11,7 +11,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// let mut count = RedBlackTree::new();
     ///
     /// for x in ["a", "b", "a", "c", "a", "b"] {
-    ///     *count.entry(x).or_insert(0) += 1:
+    ///     *count.entry(x).or_insert(0) += 1;
     /// }
     ///
     /// assert_eq!(count["a"], 3);

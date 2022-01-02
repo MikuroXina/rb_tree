@@ -20,14 +20,14 @@ struct LeafRange<K, V> {
 impl<K, V> LeafRange<K, V> {
     fn cut_left(&mut self) -> Option<(K, V)> {
         let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent())?;
-        self.start.replace(next).map(|p| unsafe { p.deallocate() })
+        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
+        std::mem::replace(&mut self.start, next).map(|p| unsafe { p.deallocate() })
     }
 
     fn cut_right(&mut self) -> Option<(K, V)> {
         let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent())?;
-        self.end.replace(next).map(|p| unsafe { p.deallocate() })
+        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
+        std::mem::replace(&mut self.end, next).map(|p| unsafe { p.deallocate() })
     }
 }
 
@@ -40,14 +40,14 @@ struct RefLeafRange<'a, K, V> {
 impl<'a, K, V> RefLeafRange<'a, K, V> {
     fn cut_left(&mut self) -> Option<(&'a K, &'a V)> {
         let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent())?;
-        self.start.replace(next).map(|p| p.key_value())
+        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
+        std::mem::replace(&mut self.start, next).map(|p| p.key_value())
     }
 
     fn cut_right(&mut self) -> Option<(&'a K, &'a V)> {
         let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent())?;
-        self.end.replace(next).map(|p| p.key_value())
+        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
+        std::mem::replace(&mut self.end, next).map(|p| p.key_value())
     }
 }
 
@@ -60,13 +60,13 @@ struct MutLeafRange<'a, K, V> {
 impl<'a, K, V> MutLeafRange<'a, K, V> {
     fn cut_left(&mut self) -> Option<(&'a K, &'a mut V)> {
         let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent())?;
-        self.start.replace(next).map(|p| p.key_value_mut())
+        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
+        std::mem::replace(&mut self.start, next).map(|p| p.key_value_mut())
     }
 
     fn cut_right(&mut self) -> Option<(&'a K, &'a mut V)> {
         let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent())?;
-        self.end.replace(next).map(|p| p.key_value_mut())
+        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
+        std::mem::replace(&mut self.end, next).map(|p| p.key_value_mut())
     }
 }

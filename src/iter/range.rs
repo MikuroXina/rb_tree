@@ -171,8 +171,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// use rb_tree::RedBlackTree;
     ///
     /// let mut map: RedBlackTree<&str, i32> = ["Alice", "Bob", "Carol", "Cheryl"]
-    ///     .iter()
-    ///     .map(|&s| (s, 0))
+    ///     .into_iter()
+    ///     .map(|s| (s, 0))
     ///     .collect();
     /// for (_, balance) in map.range_mut("B".."Cheryl") {
     ///     *balance += 100;

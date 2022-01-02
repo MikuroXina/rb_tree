@@ -279,7 +279,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(a.len(), 5);
     /// assert_eq!(b.len(), 0);
     ///
-    /// assert!(a.into_iter().eq(vec![
+    /// let drained: Vec<_> = a.into_iter().collect();
+    /// assert_eq!(drained, vec![
     ///     (1, "a"),
     ///     (2, "b"),
     ///     (3, "d"),
@@ -308,12 +309,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// ```
     /// use rb_tree::RedBlackTree;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RedBlackTree::<i32, &str>::new();
     /// assert_eq!(map.insert(37, "a"), None);
     /// assert_eq!(map.is_empty(), false);
     ///
     /// map.insert(37, "b");
-    /// assert_eq!(map.insert(37, "c"), Some("b"));
+    /// assert_eq!(map.insert(37, "c"), Some((37, "b")));
     /// assert_eq!(map[&37], "c");
     /// ```
     pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
@@ -473,7 +474,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// ```
     /// use rb_tree::RedBlackTree;
     ///
-    /// let mut map: RedBlackTree<i32, i32> = (0..8).map(|x| (x, x * 10))/collect();
+    /// let mut map: RedBlackTree<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
     /// map.retain(|&k, _| k % 2 == 0);
     /// assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
     /// ```
