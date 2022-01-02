@@ -9,6 +9,57 @@ pub struct IntoIter<K, V> {
     length: usize,
 }
 
+impl<K, V> RedBlackTree<K, V> {
+    /// Gets an iterator over the entries of the map, sorted by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(3, "c");
+    /// a.insert(2, "b");
+    /// a.insert(1, "a");
+    ///
+    /// for (key, value) in map.iter() {
+    ///     println!("{}: {}", key, value);
+    /// }
+    ///
+    /// let (first_key, first_value) = map.iter().next().unwrap();
+    /// assert_eq!((*first_key, *first_value), (1, "a"));
+    /// ```
+    pub fn iter(&self) -> Iter<K, V> {
+        self.into_iter()
+    }
+
+    /// Gets a iterator over the entries of the map, sorted by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut map = RedBlackTree::new();
+    /// map.insert("a", 1);
+    /// map.insert("b", 2);
+    /// map.insert("c", 3);
+    ///
+    /// for (key, value) in map.iter_mut() {
+    ///     if key != &"a" {
+    ///         *value += 10;
+    ///     }
+    /// }
+    ///
+    /// assert_eq!(map[&"a"], 1);
+    /// assert_eq!(map[&"b"], 12);
+    /// assert_eq!(map[&"c"], 13);
+    /// ```
+    pub fn iter_mut(&mut self) -> IterMut<K, V> {
+        self.into_iter()
+    }
+}
+
 impl<K, V> IntoIterator for RedBlackTree<K, V> {
     type Item = (K, V);
 

@@ -132,6 +132,23 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         (lower, upper)
     }
 
+    /// Constructs a double-ended iterator over a sub-range of elements in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    /// use std::ops::Bound::Included;
+    ///
+    /// let mut map = RedBlackTree::new();
+    /// map.insert(3, "a");
+    /// map.insert(5, "b");
+    /// map.insert(8, "c");
+    /// for (&key, &value) in map.range((Included(&4), Included(&8))) {
+    ///     println!("{}: {}", key, value);
+    /// }
+    /// assert_eq!(map.range(4..).next(), Some((&5, &"b")));
+    /// ```
     pub fn range<I, R>(&self, range: R) -> Range<K, V>
     where
         I: Ord + ?Sized,
@@ -146,6 +163,24 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         })
     }
 
+    /// Constructs a mutable double-ended iterator over a sub-range of elements in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut map: RedBlackTree<&str, i32> = ["Alice", "Bob", "Carol", "Cheryl"]
+    ///     .iter()
+    ///     .map(|&s| (s, 0))
+    ///     .collect();
+    /// for (_, balance) in map.range_mut("B".."Cheryl") {
+    ///     *balance += 100;
+    /// }
+    /// for (name, balance) in &map {
+    ///     println!("{} => {}", name, balance);
+    /// }
+    /// ```
     pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V>
     where
         I: Ord + ?Sized,

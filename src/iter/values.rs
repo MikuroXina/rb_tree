@@ -7,14 +7,63 @@ use super::{IntoIter, Iter, IterMut};
 pub struct IntoValues<K, V>(IntoIter<K, V>);
 
 impl<K, V> RedBlackTree<K, V> {
+    /// Creates a consuming iterator visiting all the values, in order by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(1, "hello");
+    /// a.insert(2, "goodbye");
+    ///
+    /// let values: Vec<_> = a.into_values().collect();
+    /// assert_eq!(values, ["hello", "goodbye"]);
+    /// ```
     pub fn into_values(self) -> IntoValues<K, V> {
         IntoValues(self.into_iter())
     }
 
+    /// Gets an iterator over the values of the map, in order by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(1, "hello");
+    /// a.insert(2, "goodbye");
+    ///
+    /// let values: Vec<_> = a.values().copied().collect();
+    /// assert_eq!(values, ["hello", "goodbye"]);
+    /// ```
     pub fn values(&self) -> Values<K, V> {
         Values(self.into_iter())
     }
 
+    /// Gets a mutable iterator over the values of the map, in order by key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(1, String::from("hello"));
+    /// a.insert(2, String::from("goodbye"));
+    ///
+    /// for value in a.values_mut() {
+    ///     value.push('!') ;
+    /// }
+    ///
+    /// let values: Vec<_> = a.values().cloned().collect();
+    /// assert_eq!(values, [
+    ///     String::from("hello!"),
+    ///     String::from("goodbye!")
+    /// ]);
+    /// ```
     pub fn values_mut(&mut self) -> ValuesMut<K, V> {
         ValuesMut(self.into_iter())
     }

@@ -5,10 +5,38 @@ use crate::RedBlackTree;
 use super::{IntoIter, Iter};
 
 impl<K, V> RedBlackTree<K, V> {
+    /// Creates a consuming iterator visiting all the keys, in sorted order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(2, "b");
+    /// a.insert(1, "a");
+    ///
+    /// let keys: Vec<i32> = a.into_keys().collect();
+    /// assert_eq!(keys, [1, 2]);
+    /// ```
     pub fn into_keys(self) -> IntoKeys<K, V> {
         IntoKeys(self.into_iter())
     }
 
+    /// Gets an iterator over the keys of the map, in sorted order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RedBlackTree;
+    ///
+    /// let mut a = RedBlackTree::new();
+    /// a.insert(2, "b");
+    /// a.insert(1, "a");
+    ///
+    /// let keys: Vec<i32> = a.keys().copied().collect();
+    /// assert_eq!(keys, [1, 2]);
+    /// ```
     pub fn keys(&self) -> Keys<K, V> {
         Keys(self.into_iter())
     }
