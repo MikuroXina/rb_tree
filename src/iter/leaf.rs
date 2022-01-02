@@ -60,9 +60,9 @@ impl<K, V> RefLeafRange<K, V> {
     {
         let root = tree.root;
         Self {
-            start: root.map(|r| search_lower(r, &range)),
+            start: root.and_then(|r| search_lower(r, &range)),
             start_prev: PreviousStep::Parent,
-            end: root.map(|r| search_upper(r, &range)),
+            end: root.and_then(|r| search_upper(r, &range)),
             end_prev: PreviousStep::Parent,
         }
     }
@@ -132,7 +132,7 @@ impl<K, V> RefLeafRange<K, V> {
     }
 }
 
-fn search_lower<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> NodeRef<K, V>
+fn search_lower<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> Option<NodeRef<K, V>>
 where
     K: Ord + borrow::Borrow<Q>,
     Q: ?Sized + Ord,
@@ -140,6 +140,13 @@ where
 {
     let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
     let mut current = root;
+    while !contains_key(&current) {
+        if let Some(left) = current.left().or_else(|| current.right()) {
+            current = left;
+        } else {
+            return None;
+        }
+    }
     while let Some(next) = current
         .left()
         .filter(contains_key)
@@ -148,10 +155,10 @@ where
     {
         current = next;
     }
-    current
+    Some(current)
 }
 
-fn search_upper<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> NodeRef<K, V>
+fn search_upper<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> Option<NodeRef<K, V>>
 where
     K: Ord + borrow::Borrow<Q>,
     Q: ?Sized + Ord,
@@ -159,6 +166,13 @@ where
 {
     let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
     let mut current = root;
+    while !contains_key(&current) {
+        if let Some(right) = current.right().or_else(|| current.left()) {
+            current = right;
+        } else {
+            return None;
+        }
+    }
     while let Some(next) = current
         .right()
         .filter(contains_key)
@@ -167,5 +181,5 @@ where
     {
         current = next;
     }
-    current
+    Some(current)
 }
