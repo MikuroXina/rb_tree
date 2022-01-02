@@ -18,8 +18,8 @@ impl<K, V> RedBlackTree<K, V> {
     /// a.insert(1, "hello");
     /// a.insert(2, "goodbye");
     ///
-    /// let values: Vec<_> = a.into_values().collect();
-    /// assert_eq!(values, ["hello", "goodbye"]);
+    /// let values: Vec<&str> = a.into_values().collect();
+    /// assert_eq!(values, vec!["hello", "goodbye"]);
     /// ```
     pub fn into_values(self) -> IntoValues<K, V> {
         IntoValues(self.into_iter())
@@ -70,10 +70,10 @@ impl<K, V> RedBlackTree<K, V> {
 }
 
 impl<K, V> Iterator for IntoValues<K, V> {
-    type Item = K;
+    type Item = V;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, _)| k)
+        self.0.next().map(|(_, v)| v)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -87,7 +87,7 @@ impl<K, V> Iterator for IntoValues<K, V> {
 
 impl<K, V> DoubleEndedIterator for IntoValues<K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, _)| k)
+        self.0.next_back().map(|(_, v)| v)
     }
 }
 
