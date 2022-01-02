@@ -1,10 +1,10 @@
-use std::iter::FusedIterator;
+use std::{iter::FusedIterator, ops::RangeFull};
 
 use crate::RedBlackTree;
 
-use super::{IntoIter, Iter};
+use super::{IntoIter, Range};
 
-impl<K, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RedBlackTree<K, V> {
     /// Creates a consuming iterator visiting all the keys, in sorted order.
     ///
     /// # Examples
@@ -40,7 +40,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// assert_eq!(keys, [1, 2]);
     /// ```
     pub fn keys(&self) -> Keys<K, V> {
-        Keys(self.into_iter())
+        Keys(self.into_iter(), self.len())
     }
 }
 
@@ -84,13 +84,16 @@ impl<K, V> ExactSizeIterator for IntoKeys<K, V> {
 
 impl<K, V> FusedIterator for IntoKeys<K, V> {}
 
-pub struct Keys<'a, K, V>(Iter<'a, K, V>);
+pub struct Keys<'a, K, V>(Range<'a, K, V, RangeFull>, usize);
 
-impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
+impl<'a, K: 'a + Ord, V: 'a> Iterator for Keys<'a, K, V> {
     type Item = &'a K;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.next().map(|(k, _)| k)
+        self.0.next().map(|(k, _)| {
+            self.1 -= 1;
+            k
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -110,16 +113,19 @@ impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
+impl<'a, K: 'a + Ord, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.next_back().map(|(k, _)| k)
+        self.0.next_back().map(|(k, _)| {
+            self.1 -= 1;
+            k
+        })
     }
 }
 
-impl<'a, K: 'a, V: 'a> ExactSizeIterator for Keys<'a, K, V> {
+impl<'a, K: 'a + Ord, V: 'a> ExactSizeIterator for Keys<'a, K, V> {
     fn len(&self) -> usize {
-        self.0.len()
+        self.1
     }
 }
 
-impl<'a, K: 'a, V: 'a> FusedIterator for Keys<'a, K, V> {}
+impl<'a, K: 'a + Ord, V: 'a> FusedIterator for Keys<'a, K, V> {}

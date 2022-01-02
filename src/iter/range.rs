@@ -1,137 +1,10 @@
 use std::{borrow, fmt, iter::FusedIterator, marker::PhantomData, ops};
 
-use crate::{
-    node::{ChildIndex, NodeRef},
-    RedBlackTree,
-};
+use crate::RedBlackTree;
 
-use super::{MutLeafRange, RefLeafRange};
-
-enum SearchBound<I> {
-    Included(I),
-    Excluded(I),
-    AllIncluded,
-    AllExcluded,
-}
-
-impl<I> From<ops::Bound<I>> for SearchBound<I> {
-    fn from(bound: ops::Bound<I>) -> Self {
-        match bound {
-            ops::Bound::Included(idx) => Self::Included(idx),
-            ops::Bound::Excluded(idx) => Self::Excluded(idx),
-            ops::Bound::Unbounded => Self::AllIncluded,
-        }
-    }
-}
+use super::RefLeafRange;
 
 impl<K: Ord, V> RedBlackTree<K, V> {
-    fn find_lower<I>(&self, bound: SearchBound<&I>) -> Option<NodeRef<K, V>>
-    where
-        I: Ord + ?Sized,
-        K: borrow::Borrow<I>,
-    {
-        match bound {
-            SearchBound::Included(key) => {
-                let mut current = self.root?;
-                loop {
-                    current = match key.cmp(current.key()) {
-                        std::cmp::Ordering::Less => {
-                            let left = current.child(ChildIndex::Left);
-                            if left.is_none() {
-                                break Some(current);
-                            }
-                            left.unwrap()
-                        }
-                        std::cmp::Ordering::Equal => break Some(current),
-                        std::cmp::Ordering::Greater => {
-                            let right = current.child(ChildIndex::Right);
-                            if right.is_none() {
-                                break Some(current);
-                            }
-                            right.unwrap()
-                        }
-                    }
-                }
-            }
-            SearchBound::Excluded(key) => {
-                let included_case = self.find_lower(SearchBound::Included(key))?;
-                if key == included_case.key() {
-                    Some(included_case)
-                } else {
-                    included_case
-                        .child(ChildIndex::Right)
-                        .or_else(|| included_case.parent())
-                }
-            }
-            SearchBound::AllIncluded => self.first_node(),
-            SearchBound::AllExcluded => None,
-        }
-    }
-
-    fn find_upper<I>(&self, bound: SearchBound<&I>) -> Option<NodeRef<K, V>>
-    where
-        I: Ord + ?Sized,
-        K: borrow::Borrow<I>,
-    {
-        match bound {
-            SearchBound::Included(key) => {
-                let mut current = self.root?;
-                loop {
-                    current = match key.cmp(current.key()) {
-                        std::cmp::Ordering::Less => {
-                            let left = current.child(ChildIndex::Left);
-                            if left.is_none() {
-                                break Some(current);
-                            }
-                            left.unwrap()
-                        }
-                        std::cmp::Ordering::Equal => break Some(current),
-                        std::cmp::Ordering::Greater => {
-                            let right = current.child(ChildIndex::Right);
-                            if right.is_none() {
-                                break Some(current);
-                            }
-                            right.unwrap()
-                        }
-                    }
-                }
-            }
-            SearchBound::Excluded(key) => {
-                let included_case = self.find_upper(SearchBound::Included(key))?;
-                if key == included_case.key() {
-                    Some(included_case)
-                } else {
-                    included_case
-                        .child(ChildIndex::Left)
-                        .or_else(|| included_case.parent())
-                }
-            }
-            SearchBound::AllIncluded => self.last_node(),
-            SearchBound::AllExcluded => None,
-        }
-    }
-
-    #[allow(clippy::type_complexity)]
-    fn search_range<I, R>(&self, range: &R) -> (Option<NodeRef<K, V>>, Option<NodeRef<K, V>>)
-    where
-        I: Ord + ?Sized,
-        K: borrow::Borrow<I>,
-        R: ops::RangeBounds<I>,
-    {
-        use SearchBound::*;
-        let (start, end) = (range.start_bound().into(), range.end_bound().into());
-        let (start, end) = match (start, end) {
-            (Excluded(s), Excluded(e)) if s == e => (AllExcluded, AllExcluded),
-            (Included(s) | Excluded(s), Included(e) | Excluded(e)) if s > e => {
-                (AllExcluded, AllExcluded)
-            }
-            other => other,
-        };
-        let lower = self.find_lower(start);
-        let upper = self.find_upper(end);
-        (lower, upper)
-    }
-
     /// Constructs a double-ended iterator over a sub-range of elements in the map.
     ///
     /// # Examples
@@ -149,18 +22,13 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// }
     /// assert_eq!(map.range(4..).next(), Some((&5, &"b")));
     /// ```
-    pub fn range<I, R>(&self, range: R) -> Range<K, V>
+    pub fn range<I, R>(&self, range: R) -> Range<K, V, R>
     where
         I: Ord + ?Sized,
         K: borrow::Borrow<I>,
         R: ops::RangeBounds<I>,
     {
-        let (start, end) = self.search_range(&range);
-        Range(RefLeafRange {
-            start,
-            end,
-            _phantom: PhantomData,
-        })
+        Range(RefLeafRange::new(self, range), PhantomData)
     }
 
     /// Constructs a mutable double-ended iterator over a sub-range of elements in the map.
@@ -181,48 +49,48 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     ///     println!("{} => {}", name, balance);
     /// }
     /// ```
-    pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V>
+    pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V, R>
     where
         I: Ord + ?Sized,
         K: borrow::Borrow<I>,
         R: ops::RangeBounds<I>,
     {
-        let (start, end) = self.search_range(&range);
-        RangeMut(MutLeafRange {
-            start,
-            end,
-            _phantom: PhantomData,
-        })
+        RangeMut(RefLeafRange::new(self, range), PhantomData)
     }
 }
 
-pub struct Range<'a, K, V>(RefLeafRange<'a, K, V>);
+pub struct Range<'a, K, V, R>(RefLeafRange<K, V, R>, PhantomData<&'a ()>);
 
-impl<K, V> Clone for Range<'_, K, V> {
+impl<K, V, R: Clone> Clone for Range<'_, K, V, R> {
     fn clone(&self) -> Self {
-        Self(RefLeafRange {
-            start: self.0.start,
-            end: self.0.end,
-            _phantom: PhantomData,
-        })
+        Self(self.0.clone(), PhantomData)
     }
 }
 
-impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Range<'_, K, V> {
+impl<K: fmt::Debug, V: fmt::Debug, R> fmt::Debug for Range<'_, K, V, R>
+where
+    K: Ord,
+    R: Clone + ops::RangeBounds<K>,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.clone()).finish()
     }
 }
 
-impl<'a, K: 'a, V: 'a> Iterator for Range<'a, K, V> {
+impl<'a, K, V, R> Iterator for Range<'a, K, V, R>
+where
+    K: Ord + 'a,
+    V: 'a,
+    R: ops::RangeBounds<K>,
+{
     type Item = (&'a K, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.cut_left()
+        self.0.cut_left().map(|n| n.key_value())
     }
 
     fn last(mut self) -> Option<Self::Item> {
-        self.0.cut_right()
+        self.0.cut_right().map(|n| n.key_value())
     }
 
     fn min(mut self) -> Option<Self::Item> {
@@ -234,36 +102,51 @@ impl<'a, K: 'a, V: 'a> Iterator for Range<'a, K, V> {
     }
 }
 
-impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Range<'a, K, V> {
+impl<'a, K, V, R> DoubleEndedIterator for Range<'a, K, V, R>
+where
+    K: Ord + 'a,
+    V: 'a,
+    R: ops::RangeBounds<K>,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.cut_right()
+        self.0.cut_right().map(|n| n.key_value())
     }
 }
 
-impl<'a, K: 'a, V: 'a> FusedIterator for Range<'a, K, V> {}
+impl<'a, K, V, R> FusedIterator for Range<'a, K, V, R>
+where
+    K: Ord + 'a,
+    V: 'a,
+    R: ops::RangeBounds<K>,
+{
+}
 
-pub struct RangeMut<'a, K, V>(MutLeafRange<'a, K, V>);
+pub struct RangeMut<'a, K, V, I>(RefLeafRange<K, V, I>, PhantomData<&'a mut ()>);
 
-impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for RangeMut<'_, K, V> {
+impl<K: fmt::Debug, V: fmt::Debug, R> fmt::Debug for RangeMut<'_, K, V, R>
+where
+    K: Ord,
+    R: Clone + ops::RangeBounds<K>,
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Range(RefLeafRange {
-            start: self.0.start,
-            end: self.0.end,
-            _phantom: PhantomData,
-        })
-        .fmt(f)
+        Range(self.0.clone(), PhantomData).fmt(f)
     }
 }
 
-impl<'a, K: 'a, V: 'a> Iterator for RangeMut<'a, K, V> {
+impl<'a, K, V, R> Iterator for RangeMut<'a, K, V, R>
+where
+    K: Ord + 'a,
+    V: 'a,
+    R: ops::RangeBounds<K>,
+{
     type Item = (&'a K, &'a mut V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.cut_left()
+        self.0.cut_left().map(|n| n.key_value_mut())
     }
 
     fn last(mut self) -> Option<Self::Item> {
-        self.0.cut_right()
+        self.0.cut_right().map(|n| n.key_value_mut())
     }
 
     fn min(mut self) -> Option<Self::Item> {
@@ -275,10 +158,21 @@ impl<'a, K: 'a, V: 'a> Iterator for RangeMut<'a, K, V> {
     }
 }
 
-impl<'a, K: 'a, V: 'a> DoubleEndedIterator for RangeMut<'a, K, V> {
+impl<'a, K, V, R> DoubleEndedIterator for RangeMut<'a, K, V, R>
+where
+    K: Ord + 'a,
+    V: 'a,
+    R: ops::RangeBounds<K>,
+{
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.cut_right()
+        self.0.cut_right().map(|n| n.key_value_mut())
     }
 }
 
-impl<'a, K: 'a, V: 'a> FusedIterator for RangeMut<'a, K, V> {}
+impl<'a, K, V, R> FusedIterator for RangeMut<'a, K, V, R>
+where
+    K: Ord + 'a,
+    V: 'a,
+    R: ops::RangeBounds<K>,
+{
+}

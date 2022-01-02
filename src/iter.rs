@@ -8,9 +8,12 @@ pub use keys::*;
 pub use range::*;
 pub use values::*;
 
-use std::marker::PhantomData;
+use std::{borrow, ops};
 
-use crate::node::{ChildIndex, NodeRef};
+use crate::{
+    node::{ChildIndex, NodeRef},
+    RedBlackTree,
+};
 
 struct LeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
@@ -31,44 +34,149 @@ impl<K, V> LeafRange<K, V> {
     }
 }
 
-struct RefLeafRange<'a, K, V> {
-    start: Option<NodeRef<K, V>>,
-    end: Option<NodeRef<K, V>>,
-    _phantom: PhantomData<&'a ()>,
+enum SearchBound<I> {
+    Included(I),
+    Excluded(I),
+    AllIncluded,
+    AllExcluded,
 }
 
-impl<'a, K, V> RefLeafRange<'a, K, V> {
-    fn cut_left(&mut self) -> Option<(&'a K, &'a V)> {
-        // FIXME: avoid visited nodes
-        let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
-        std::mem::replace(&mut self.start, next).map(|p| p.key_value())
-    }
-
-    fn cut_right(&mut self) -> Option<(&'a K, &'a V)> {
-        let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
-        std::mem::replace(&mut self.end, next).map(|p| p.key_value())
+impl<I> From<ops::Bound<I>> for SearchBound<I> {
+    fn from(bound: ops::Bound<I>) -> Self {
+        match bound {
+            ops::Bound::Included(idx) => Self::Included(idx),
+            ops::Bound::Excluded(idx) => Self::Excluded(idx),
+            ops::Bound::Unbounded => Self::AllIncluded,
+        }
     }
 }
 
-struct MutLeafRange<'a, K, V> {
-    start: Option<NodeRef<K, V>>,
-    end: Option<NodeRef<K, V>>,
-    _phantom: PhantomData<&'a mut ()>,
+#[derive(Debug, Clone)]
+struct SearchRange<R> {
+    range: R,
 }
 
-impl<'a, K, V> MutLeafRange<'a, K, V> {
-    fn cut_left(&mut self) -> Option<(&'a K, &'a mut V)> {
-        // FIXME: avoid visited nodes
-        let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
-        std::mem::replace(&mut self.start, next).map(|p| p.key_value_mut())
+impl<R> SearchRange<R> {
+    fn contains<K>(&self, key: &K) -> bool
+    where
+        K: ?Sized + Ord,
+        R: ops::RangeBounds<K>,
+    {
+        let lower = self.range.start_bound().into();
+        let upper = self.range.end_bound().into();
+        let is_lower_ok = match lower {
+            SearchBound::Included(b) => b <= key,
+            SearchBound::Excluded(b) => b < key,
+            SearchBound::AllIncluded => true,
+            SearchBound::AllExcluded => false,
+        };
+        let is_upper_ok = match upper {
+            SearchBound::Included(b) => key <= b,
+            SearchBound::Excluded(b) => key < b,
+            SearchBound::AllIncluded => true,
+            SearchBound::AllExcluded => false,
+        };
+        is_lower_ok && is_upper_ok
+    }
+}
+
+struct RefLeafRange<K, V, R> {
+    current: Option<NodeRef<K, V>>,
+    range: SearchRange<R>,
+    is_climbing: bool,
+}
+
+impl<K, V, R: Clone> Clone for RefLeafRange<K, V, R> {
+    fn clone(&self) -> Self {
+        Self {
+            range: self.range.clone(),
+            ..*self
+        }
+    }
+}
+
+impl<K, V, R> RefLeafRange<K, V, R>
+where
+    K: Ord,
+{
+    fn new<I>(tree: &RedBlackTree<K, V>, range: R) -> Self
+    where
+        K: borrow::Borrow<I>,
+        I: Ord + ?Sized,
+        R: ops::RangeBounds<I>,
+    {
+        Self {
+            current: tree.root,
+            range: SearchRange { range },
+            is_climbing: false,
+        }
     }
 
-    fn cut_right(&mut self) -> Option<(&'a K, &'a mut V)> {
-        let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
-        std::mem::replace(&mut self.end, next).map(|p| p.key_value_mut())
+    fn cut_left<Q>(&mut self) -> Option<NodeRef<K, V>>
+    where
+        K: borrow::Borrow<Q>,
+        Q: Ord + ?Sized,
+        R: ops::RangeBounds<Q>,
+    {
+        let mut current = self.current?;
+        let ret = if self.is_climbing {
+            if let Some(right) = current.child(ChildIndex::Right) {
+                self.current = Some(right);
+                self.is_climbing = false;
+            } else {
+                self.current = current.parent();
+            }
+            current
+        } else {
+            while let Some(left) = current.child(ChildIndex::Left) {
+                if !self.range.contains(left.key()) {
+                    break;
+                }
+                current = left;
+            }
+            self.current = current.parent();
+            self.is_climbing = true;
+            current
+        };
+        if self.range.contains(ret.key()) {
+            Some(ret)
+        } else {
+            self.current = None;
+            None
+        }
+    }
+
+    fn cut_right<Q>(&mut self) -> Option<NodeRef<K, V>>
+    where
+        K: borrow::Borrow<Q>,
+        Q: Ord + ?Sized,
+        R: ops::RangeBounds<Q>,
+    {
+        let mut current = self.current?;
+        let ret = if self.is_climbing {
+            if let Some(left) = current.child(ChildIndex::Left) {
+                self.current = Some(left);
+                self.is_climbing = false;
+            } else {
+                self.current = current.parent();
+            }
+            current
+        } else {
+            while let Some(right) = current.child(ChildIndex::Right) {
+                if !self.range.contains(right.key()) {
+                    break;
+                }
+                current = right;
+            }
+            self.current = current.parent();
+            self.is_climbing = true;
+            current
+        };
+        if self.range.contains(ret.key()) {
+            Some(ret)
+        } else {
+            self.current = None;
+            None
+        }
     }
 }
