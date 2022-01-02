@@ -1,4 +1,4 @@
-use crate::RedBlackTree;
+use crate::{node::NodeRef, RedBlackTree};
 
 impl<K: Ord, V> RedBlackTree<K, V> {
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -48,8 +48,14 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// assert_eq!(map["poneyland"], 12);
     /// ```
     pub fn or_insert(self, default: V) -> &'a mut V {
-        if let Ok(found) = self.tree.search_node(&self.key) {
-            found.insert(default)
+        if self.tree.root.is_none() {
+            let root = NodeRef::new(self.key, default);
+            self.tree.root = Some(root);
+            root.value_mut()
+        } else if let Err(target) = self.tree.search_node(&self.key) {
+            let node = NodeRef::new(self.key, default);
+            self.tree.insert_node(node, target);
+            node.value_mut()
         } else {
             self.tree.get_mut(&self.key).unwrap()
         }
@@ -86,8 +92,16 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// assert_eq!(map["poneyland"], 9);
     /// ```
     pub fn or_insert_with_key<F: FnOnce(&K) -> V>(self, default: F) -> &'a mut V {
-        if let Ok(found) = self.tree.search_node(&self.key) {
-            found.insert(default(&self.key))
+        if self.tree.root.is_none() {
+            let default = default(&self.key);
+            let root = NodeRef::new(self.key, default);
+            self.tree.root = Some(root);
+            root.value_mut()
+        } else if let Err(target) = self.tree.search_node(&self.key) {
+            let default = default(&self.key);
+            let node = NodeRef::new(self.key, default);
+            self.tree.insert_node(node, target);
+            node.value_mut()
         } else {
             self.tree.get_mut(&self.key).unwrap()
         }
