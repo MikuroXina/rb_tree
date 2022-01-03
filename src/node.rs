@@ -12,6 +12,16 @@ pub enum ChildIndex {
     Right,
 }
 
+impl ChildIndex {
+    pub fn is_left(self) -> bool {
+        matches!(self, ChildIndex::Left)
+    }
+
+    pub fn is_right(self) -> bool {
+        matches!(self, ChildIndex::Right)
+    }
+}
+
 impl std::ops::Not for ChildIndex {
     type Output = Self;
 
