@@ -1,9 +1,6 @@
 use std::{borrow, ops};
 
-use crate::{
-    node::{ChildIndex, NodeRef},
-    RedBlackTree,
-};
+use crate::{node::NodeRef, RedBlackTree};
 
 pub struct LeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
@@ -20,13 +17,13 @@ impl<K, V> LeafRange<K, V> {
 
     pub fn cut_left(&mut self) -> Option<(K, V)> {
         let start = self.start?;
-        let next = start.child(ChildIndex::Right).or_else(|| start.parent());
+        let next = start.right().or_else(|| start.parent());
         std::mem::replace(&mut self.start, next).map(|p| unsafe { p.deallocate() })
     }
 
     pub fn cut_right(&mut self) -> Option<(K, V)> {
         let end = self.end?;
-        let next = end.child(ChildIndex::Left).or_else(|| end.parent());
+        let next = end.left().or_else(|| end.parent());
         std::mem::replace(&mut self.end, next).map(|p| unsafe { p.deallocate() })
     }
 }

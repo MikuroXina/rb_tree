@@ -1,7 +1,4 @@
-use crate::{
-    node::{ChildIndex, NodeRef},
-    RedBlackTree,
-};
+use crate::{node::NodeRef, RedBlackTree};
 
 use std::{fmt, iter::FusedIterator};
 
@@ -70,9 +67,7 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
             // FIXME: avoid visited nodes
             let current = self.current?;
             let (k, v) = current.key_value_mut();
-            self.current = current
-                .child(ChildIndex::Right)
-                .or_else(|| current.parent());
+            self.current = current.right().or_else(|| current.parent());
             if (self.pred)(k, v) {
                 return self.tree.remove_entry(k);
             }

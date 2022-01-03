@@ -158,6 +158,11 @@ impl<K, V> NodeRef<K, V> {
         sibling.child(!index)
     }
 
+    pub fn children(self) -> (Option<Self>, Option<Self>) {
+        let this = unsafe { self.0.as_ref() };
+        this.children
+    }
+
     pub fn child(self, idx: ChildIndex) -> Option<Self> {
         let this = unsafe { self.0.as_ref() };
         match idx {
@@ -187,7 +192,7 @@ impl<K, V> NodeRef<K, V> {
 
     pub fn index_on_parent(self) -> Option<ChildIndex> {
         let parent = self.parent()?;
-        let child = parent.child(ChildIndex::Left);
+        let child = parent.left();
         Some(if Some(self) == child {
             ChildIndex::Left
         } else {

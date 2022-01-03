@@ -21,7 +21,7 @@ pub struct RedBlackTree<K, V> {
 impl<K, V> RedBlackTree<K, V> {
     fn first_node(&self) -> Option<NodeRef<K, V>> {
         let mut current = self.root?;
-        while let Some(left) = current.child(ChildIndex::Left) {
+        while let Some(left) = current.left() {
             current = left;
         }
         Some(current)
@@ -29,7 +29,7 @@ impl<K, V> RedBlackTree<K, V> {
 
     fn last_node(&self) -> Option<NodeRef<K, V>> {
         let mut current = self.root?;
-        while let Some(right) = current.child(ChildIndex::Right) {
+        while let Some(right) = current.right() {
             current = right;
         }
         Some(current)
@@ -57,10 +57,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             unsafe { node.deallocate() }
         }
 
-        let child = match (node.child(ChildIndex::Left), node.child(ChildIndex::Right)) {
+        let child = match node.children() {
             (Some(left), Some(right)) => {
                 let mut min_in_right = right;
-                while let Some(lesser) = min_in_right.child(ChildIndex::Left) {
+                while let Some(lesser) = min_in_right.left() {
                     min_in_right = lesser;
                 }
                 min_in_right
