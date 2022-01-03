@@ -66,9 +66,9 @@ impl<K, V> RefLeafRange<K, V> {
             };
         Self {
             start,
-            start_prev: PreviousStep::Parent,
+            start_prev: PreviousStep::LeftChild,
             end,
-            end_prev: PreviousStep::Parent,
+            end_prev: PreviousStep::RightChild,
         }
     }
 
@@ -159,9 +159,11 @@ where
         loop {
             if is_ok(current.key()) {
                 // lower is current or in left
-                if let Some(left) = current.left() {
+                if let Some(left) = current.left().filter(|n| is_ok(n.key())) {
                     current = left;
                     continue;
+                } else {
+                    break;
                 }
             }
             if let Some(right) = current.right() {
@@ -183,9 +185,11 @@ where
         loop {
             if is_ok(current.key()) {
                 // upper is current or in right
-                if let Some(right) = current.right() {
+                if let Some(right) = current.right().filter(|n| is_ok(n.key())) {
                     current = right;
                     continue;
+                } else {
+                    break;
                 }
             }
             if let Some(left) = current.left() {
