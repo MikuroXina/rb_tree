@@ -149,55 +149,58 @@ where
     Q: ?Sized + Ord,
     R: ops::RangeBounds<Q>,
 {
+    use std::cmp::Ordering;
     let lower = {
-        let is_ok = |key| match range.start_bound() {
-            ops::Bound::Included(b) => b <= key,
-            ops::Bound::Excluded(b) => b < key,
-            ops::Bound::Unbounded => true,
+        let cmp = |key: &Q| match range.start_bound() {
+            ops::Bound::Included(b) => b.cmp(key),
+            ops::Bound::Excluded(b) => b.cmp(key).then(Ordering::Less),
+            ops::Bound::Unbounded => Ordering::Less,
         };
         let mut current = root;
         loop {
-            if is_ok(current.key()) {
-                // lower is current or in left
-                if let Some(left) = current.left().filter(|n| is_ok(n.key())) {
-                    current = left;
-                    continue;
+            match cmp(current.key()) {
+                Ordering::Less => {
+                    if let Some(left) = current.left().filter(|left| cmp(left.key()).is_lt()) {
+                        current = left;
+                        continue;
+                    }
                 }
-                break;
+                Ordering::Equal => {}
+                Ordering::Greater => {
+                    if let Some(right) = current.right() {
+                        current = right;
+                        continue;
+                    }
+                }
             }
-            if let Some(right) = current.right() {
-                // lower is in right
-                current = right;
-                continue;
-            }
-            // lower is not found
-            return None;
+            break;
         }
         current
     };
     let upper = {
-        let is_ok = |key| match range.end_bound() {
-            ops::Bound::Included(b) => key <= b,
-            ops::Bound::Excluded(b) => key < b,
-            ops::Bound::Unbounded => true,
+        let cmp = |key: &Q| match range.end_bound() {
+            ops::Bound::Included(b) => key.cmp(b),
+            ops::Bound::Excluded(b) => key.cmp(b).then(Ordering::Less),
+            ops::Bound::Unbounded => Ordering::Less,
         };
         let mut current = root;
         loop {
-            if is_ok(current.key()) {
-                // upper is current or in right
-                if let Some(right) = current.right().filter(|n| is_ok(n.key())) {
-                    current = right;
-                    continue;
+            match cmp(current.key()) {
+                Ordering::Less => {
+                    if let Some(left) = current.left().filter(|left| cmp(left.key()).is_lt()) {
+                        current = left;
+                        continue;
+                    }
                 }
-                break;
+                Ordering::Equal => {}
+                Ordering::Greater => {
+                    if let Some(right) = current.right() {
+                        current = right;
+                        continue;
+                    }
+                }
             }
-            if let Some(left) = current.left() {
-                // upper is in left
-                current = left;
-                continue;
-            }
-            // upper is not found
-            return None;
+            break;
         }
         current
     };
