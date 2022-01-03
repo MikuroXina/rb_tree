@@ -58,11 +58,16 @@ impl<K, V> RefLeafRange<K, V> {
         Q: Ord + ?Sized,
         R: ops::RangeBounds<Q>,
     {
-        let root = tree.root;
+        let (start, end) =
+            if let Some((start, end)) = tree.root.and_then(|root| search_range(root, range)) {
+                (Some(start), Some(end))
+            } else {
+                (None, None)
+            };
         Self {
-            start: root.and_then(|r| search_lower(r, &range)),
+            start,
             start_prev: PreviousStep::Parent,
-            end: root.and_then(|r| search_upper(r, &range)),
+            end,
             end_prev: PreviousStep::Parent,
         }
     }
@@ -138,54 +143,48 @@ impl<K, V> RefLeafRange<K, V> {
     }
 }
 
-fn search_lower<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> Option<NodeRef<K, V>>
+fn search_range<K, V, R, Q>(root: NodeRef<K, V>, range: R) -> Option<(NodeRef<K, V>, NodeRef<K, V>)>
 where
     K: Ord + borrow::Borrow<Q>,
     Q: ?Sized + Ord,
     R: ops::RangeBounds<Q>,
 {
-    let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
-    let mut current = root;
-    while !contains_key(&current) {
-        if let Some(left) = current.left().or_else(|| current.right()) {
-            current = left;
-        } else {
-            return None;
-        }
+    let lower = binary_search_node(root, |key: &Q| match range.start_bound() {
+        ops::Bound::Included(b) => b <= key,
+        ops::Bound::Excluded(b) => b < key,
+        ops::Bound::Unbounded => true,
+    });
+    let upper = binary_search_node(root, |key: &Q| match range.end_bound() {
+        ops::Bound::Included(b) => key <= b,
+        ops::Bound::Excluded(b) => key < b,
+        ops::Bound::Unbounded => true,
+    });
+    if upper.key() < lower.key() {
+        // if empty range
+        None
+    } else {
+        Some((lower, upper))
     }
-    while let Some(next) = current
-        .left()
-        .filter(contains_key)
-        .or_else(|| current.right())
-        .filter(contains_key)
-    {
-        current = next;
-    }
-    Some(current)
 }
 
-fn search_upper<K, V, R, Q>(root: NodeRef<K, V>, range: &R) -> Option<NodeRef<K, V>>
+fn binary_search_node<K, V, F, Q>(root: NodeRef<K, V>, is_ok: F) -> NodeRef<K, V>
 where
     K: Ord + borrow::Borrow<Q>,
+    F: Fn(&Q) -> bool,
     Q: ?Sized + Ord,
-    R: ops::RangeBounds<Q>,
 {
-    let contains_key = |node: &NodeRef<K, V>| range.contains(node.key());
     let mut current = root;
-    while !contains_key(&current) {
-        if let Some(right) = current.right().or_else(|| current.left()) {
+    loop {
+        if is_ok(current.key()) {
+            if let Some(left) = current.left() {
+                current = left;
+                continue;
+            }
+        } else if let Some(right) = current.right() {
             current = right;
-        } else {
-            return None;
+            continue;
         }
+        break;
     }
-    while let Some(next) = current
-        .right()
-        .filter(contains_key)
-        .or_else(|| current.left())
-        .filter(contains_key)
-    {
-        current = next;
-    }
-    Some(current)
+    current
 }
