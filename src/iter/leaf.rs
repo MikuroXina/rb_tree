@@ -162,16 +162,16 @@ where
                 if let Some(left) = current.left().filter(|n| is_ok(n.key())) {
                     current = left;
                     continue;
-                } else {
-                    break;
                 }
+                break;
             }
             if let Some(right) = current.right() {
                 // lower is in right
                 current = right;
                 continue;
             }
-            break;
+            // lower is not found
+            return None;
         }
         current
     };
@@ -188,16 +188,16 @@ where
                 if let Some(right) = current.right().filter(|n| is_ok(n.key())) {
                     current = right;
                     continue;
-                } else {
-                    break;
                 }
+                break;
             }
             if let Some(left) = current.left() {
                 // upper is in left
                 current = left;
                 continue;
             }
-            break;
+            // upper is not found
+            return None;
         }
         current
     };
