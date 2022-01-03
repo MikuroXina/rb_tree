@@ -149,42 +149,58 @@ where
     Q: ?Sized + Ord,
     R: ops::RangeBounds<Q>,
 {
-    let lower = binary_search_node(root, |key: &Q| match range.start_bound() {
-        ops::Bound::Included(b) => b <= key,
-        ops::Bound::Excluded(b) => b < key,
-        ops::Bound::Unbounded => true,
-    });
-    let upper = binary_search_node(root, |key: &Q| match range.end_bound() {
-        ops::Bound::Included(b) => key <= b,
-        ops::Bound::Excluded(b) => key < b,
-        ops::Bound::Unbounded => true,
-    });
+    let lower = {
+        let is_ok = |key| match range.start_bound() {
+            ops::Bound::Included(b) => b <= key,
+            ops::Bound::Excluded(b) => b < key,
+            ops::Bound::Unbounded => true,
+        };
+        let mut current = root;
+        loop {
+            if is_ok(current.key()) {
+                // lower is current or in left
+                if let Some(left) = current.left() {
+                    current = left;
+                    continue;
+                }
+            }
+            if let Some(right) = current.right() {
+                // lower is in right
+                current = right;
+                continue;
+            }
+            break;
+        }
+        current
+    };
+    let upper = {
+        let is_ok = |key| match range.end_bound() {
+            ops::Bound::Included(b) => key <= b,
+            ops::Bound::Excluded(b) => key < b,
+            ops::Bound::Unbounded => true,
+        };
+        let mut current = root;
+        loop {
+            if is_ok(current.key()) {
+                // upper is current or in right
+                if let Some(right) = current.right() {
+                    current = right;
+                    continue;
+                }
+            }
+            if let Some(left) = current.left() {
+                // upper is in left
+                current = left;
+                continue;
+            }
+            break;
+        }
+        current
+    };
     if upper.key() < lower.key() {
         // if empty range
         None
     } else {
         Some((lower, upper))
     }
-}
-
-fn binary_search_node<K, V, F, Q>(root: NodeRef<K, V>, is_ok: F) -> NodeRef<K, V>
-where
-    K: Ord + borrow::Borrow<Q>,
-    F: Fn(&Q) -> bool,
-    Q: ?Sized + Ord,
-{
-    let mut current = root;
-    loop {
-        if is_ok(current.key()) {
-            if let Some(left) = current.left() {
-                current = left;
-                continue;
-            }
-        } else if let Some(right) = current.right() {
-            current = right;
-            continue;
-        }
-        break;
-    }
-    current
 }
