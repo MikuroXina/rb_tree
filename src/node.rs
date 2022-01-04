@@ -78,8 +78,9 @@ impl<K, V> NodeRef<K, V> {
 
     pub unsafe fn deallocate(mut self) -> (K, V) {
         let this = self.0.as_mut();
-        if let Some(parent) = this.parent.take() {
+        if let Some(parent) = this.parent {
             parent.set_child(self.index_on_parent().unwrap(), None);
+            this.parent = None;
         }
         if let Some(mut left) = this.children.0.take() {
             left.0.as_mut().parent = None;
