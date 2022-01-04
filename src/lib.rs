@@ -60,6 +60,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             (None, None) => {
                 if self.root == Some(node) {
                     self.root = None;
+                } else {
+                    let parent = node.parent().unwrap();
+                    parent.set_child(node.index_on_parent().unwrap(), None);
                 }
                 return unsafe { node.deallocate() };
             }
