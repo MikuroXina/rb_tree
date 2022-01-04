@@ -77,6 +77,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         if let Some(replacement) = replacement {
             debug_assert!(replacement.left().is_none());
             replacement.set_child(ChildIndex::Left, node.left());
+            if node.parent().is_none() {
+                self.root = Some(replacement);
+            }
         }
         unsafe { node.deallocate() }
     }
