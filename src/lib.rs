@@ -58,8 +58,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 Some(min_in_right)
             }
             (None, None) => {
-                // node is root
-                return unsafe { self.root.take().unwrap().deallocate() };
+                if self.root == Some(node) {
+                    self.root = None;
+                }
+                return unsafe { node.deallocate() };
             }
             (l, r) => l.xor(r),
         };
