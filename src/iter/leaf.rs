@@ -1,6 +1,9 @@
 use std::{borrow, ops};
 
-use crate::{node::NodeRef, RedBlackTree};
+use crate::{
+    node::{ChildIndex, NodeRef},
+    RedBlackTree,
+};
 
 pub struct LeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
@@ -97,8 +100,11 @@ impl<K, V> RefLeafRange<K, V> {
                     return Some(curr);
                 }
                 PreviousStep::RightChild => {
-                    // ascended from right, so ascend once more
+                    // ascended from right, so ascend again
                     self.start = curr.parent();
+                    if let Some(ChildIndex::Left) = curr.index_on_parent() {
+                        self.start_prev = PreviousStep::LeftChild;
+                    }
                 }
             }
         }
@@ -134,8 +140,11 @@ impl<K, V> RefLeafRange<K, V> {
                     return Some(curr);
                 }
                 PreviousStep::LeftChild => {
-                    // ascended from left, so ascend once more
+                    // ascended from left, so ascend again
                     self.end = curr.parent();
+                    if let Some(ChildIndex::Right) = curr.index_on_parent() {
+                        self.start_prev = PreviousStep::RightChild;
+                    }
                 }
             }
         }
