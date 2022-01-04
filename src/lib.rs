@@ -1,5 +1,4 @@
 mod balance;
-pub mod drain;
 pub mod entry;
 pub mod iter;
 mod mem;
