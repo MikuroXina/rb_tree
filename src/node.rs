@@ -255,18 +255,15 @@ impl<K, V> NodeRef<K, V> {
     pub unsafe fn set_child(mut self, idx: ChildIndex, mut new_child: Self) {
         let this = self.0.as_mut();
         new_child.0.as_mut().parent = Some(self);
-        match idx {
-            ChildIndex::Left => this
-                .children
-                .0
-                .replace(new_child)
-                .expect("the left child must not occupied"),
-            ChildIndex::Right => this
-                .children
-                .1
-                .replace(new_child)
-                .expect("the right child must not occupied"),
-        };
+        debug_assert!(
+            match idx {
+                ChildIndex::Left => this.children.0.replace(new_child),
+                ChildIndex::Right => this.children.1.replace(new_child),
+            }
+            .is_none(),
+            "the child on {:?} must not occupied",
+            idx
+        );
     }
 
     /// Overwrites the child link on `idx` with `new_child`.
