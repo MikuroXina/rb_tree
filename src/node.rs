@@ -234,7 +234,7 @@ impl<K, V> NodeRef<K, V> {
     /// # Safety
     ///
     /// The child edge on `idx` must be occupied.
-    pub unsafe fn clear_child(mut self, idx: ChildIndex) {
+    pub unsafe fn clear_child(mut self, idx: ChildIndex) -> Self {
         let this = self.0.as_mut();
         if let Some(mut child) = self.child(idx) {
             child.0.as_mut().parent = None;
@@ -244,7 +244,7 @@ impl<K, V> NodeRef<K, V> {
             ChildIndex::Right => &mut this.children.1,
         };
         debug_assert!(child.is_some(), "the child on {:?} must be occupied", idx);
-        *child = None;
+        child.take().unwrap()
     }
 
     /// Make a child link to `new_child` on `idx` edge.
@@ -271,11 +271,12 @@ impl<K, V> NodeRef<K, V> {
     /// # Safety
     ///
     /// The child link on `idx` must be extracted with [`set_child`] or [`clear_child`] before calling this.
-    pub unsafe fn write_child(self, idx: ChildIndex, new_child: Option<Self>) {
+    pub unsafe fn write_child(self, idx: ChildIndex, new_child: Option<Self>) -> Option<Self> {
         if let Some(new_child) = new_child {
             self.set_child(idx, new_child);
+            None
         } else {
-            self.clear_child(idx);
+            Some(self.clear_child(idx))
         }
     }
 

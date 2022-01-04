@@ -62,7 +62,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                     self.root = None;
                 } else {
                     let (parent, idx) = node.index_and_parent().unwrap();
-                    unsafe { parent.clear_child(idx) }
+                    unsafe {
+                        parent.clear_child(idx);
+                    }
                 }
                 return unsafe { node.deallocate() };
             }
@@ -72,11 +74,15 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         self.balance_after_remove(node);
 
         if let Some((parent, idx)) = node.index_and_parent() {
-            unsafe { parent.write_child(idx, replacement) }
+            unsafe {
+                parent.write_child(idx, replacement);
+            }
         }
         if let Some(replacement) = replacement {
             debug_assert!(replacement.left().is_none());
-            unsafe { replacement.write_child(ChildIndex::Left, node.left()) }
+            unsafe {
+                replacement.write_child(ChildIndex::Left, node.left());
+            }
             if node.parent().is_none() {
                 self.root = Some(replacement);
             }

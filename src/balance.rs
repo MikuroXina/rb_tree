@@ -25,7 +25,9 @@ impl<K, V> RedBlackTree<K, V> {
         } else {
             if let Some(parent) = pivot.parent() {
                 let idx = pivot.index_on_parent().unwrap();
-                unsafe { parent.clear_child(idx) }
+                unsafe {
+                    parent.clear_child(idx);
+                }
             }
             self.root = Some(pivot);
         }
