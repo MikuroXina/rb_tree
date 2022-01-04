@@ -169,7 +169,7 @@ where
         loop {
             match cmp(current.key()) {
                 Ordering::Less => {
-                    if let Some(left) = current.left() {
+                    if let Some(left) = current.left().filter(|left| cmp(left.key()).is_le()) {
                         current = left;
                         continue;
                     }
@@ -203,7 +203,7 @@ where
                 }
                 Ordering::Equal => {}
                 Ordering::Less => {
-                    if let Some(right) = current.right() {
+                    if let Some(right) = current.right().filter(|right| cmp(right.key()).is_le()) {
                         current = right;
                         continue;
                     }
