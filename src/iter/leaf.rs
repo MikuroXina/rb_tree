@@ -157,7 +157,7 @@ where
         loop {
             match cmp(current.key()) {
                 Ordering::Less => {
-                    if let Some(left) = current.left().filter(|left| cmp(left.key()).is_lt()) {
+                    if let Some(left) = current.left() {
                         current = left;
                         continue;
                     }
@@ -183,14 +183,14 @@ where
         let mut current = root;
         loop {
             match cmp(current.key()) {
-                Ordering::Less => {
-                    if let Some(left) = current.left().filter(|left| cmp(left.key()).is_lt()) {
+                Ordering::Greater => {
+                    if let Some(left) = current.left() {
                         current = left;
                         continue;
                     }
                 }
                 Ordering::Equal => {}
-                Ordering::Greater => {
+                Ordering::Less => {
                     if let Some(right) = current.right() {
                         current = right;
                         continue;
