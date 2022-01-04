@@ -78,8 +78,15 @@ impl<K, V> NodeRef<K, V> {
 
     pub unsafe fn deallocate(mut self) -> (K, V) {
         let this = self.0.as_mut();
-        this.parent = None;
-        this.children = (None, None);
+        if let Some(parent) = this.parent.take() {
+            parent.set_child(self.index_on_parent().unwrap(), None);
+        }
+        if let Some(mut left) = this.children.0.take() {
+            left.0.as_mut().parent = None;
+        }
+        if let Some(mut right) = this.children.1.take() {
+            right.0.as_mut().parent = None;
+        }
         let this = Box::from_raw(self.0.as_ptr());
         (this.key, this.value)
     }
