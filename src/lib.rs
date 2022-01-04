@@ -44,44 +44,35 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
-        if node.parent().is_none() {
-            // the node is root
-            return unsafe { self.root.take().unwrap().deallocate() };
-        }
-
-        fn pop_then_promote<K, V>(node: NodeRef<K, V>, child: Option<NodeRef<K, V>>) -> (K, V) {
-            if let Some(parent) = node.parent() {
-                parent.set_child(node.index_on_parent().unwrap(), child);
-            }
-            unsafe { node.deallocate() }
-        }
-
         let child = match node.children() {
-            (Some(left), Some(right)) => {
+            (Some(_), Some(right)) => {
                 let mut min_in_right = right;
-                while let Some(lesser) = min_in_right.left() {
-                    min_in_right = lesser;
+                while let Some(min) = min_in_right.left() {
+                    min_in_right = min;
                 }
-                min_in_right
-                    .parent()
-                    .unwrap()
-                    .set_child(min_in_right.index_on_parent().unwrap(), None);
-                min_in_right.set_color(node.color());
-                min_in_right.set_child(ChildIndex::Left, Some(left));
-                let right_top = if min_in_right == right {
-                    None
-                } else {
-                    Some(right)
-                };
-                min_in_right.set_child(ChildIndex::Right, right_top);
+                while min_in_right.index_on_parent().unwrap().is_left() {
+                    self.rotate(min_in_right, ChildIndex::Left);
+                    min_in_right = min_in_right.parent().unwrap();
+                }
                 Some(min_in_right)
+            }
+            (None, None) => {
+                // node is root
+                return unsafe { self.root.take().unwrap().deallocate() };
             }
             (l, r) => l.xor(r),
         };
+        debug_assert!(child.and_then(|c| c.left()).is_none());
 
         self.balance_after_remove(node);
 
-        pop_then_promote(node, child)
+        if let Some(parent) = node.parent() {
+            parent.set_child(node.index_on_parent().unwrap(), child);
+        }
+        if let Some(child) = child {
+            child.set_child(ChildIndex::Left, node.left());
+        }
+        unsafe { node.deallocate() }
     }
 
     fn search_node<Q>(&self, key: &Q) -> Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>

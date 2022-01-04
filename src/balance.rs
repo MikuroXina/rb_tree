@@ -4,7 +4,7 @@ use crate::{
 };
 
 impl<K, V> RedBlackTree<K, V> {
-    fn rotate(&mut self, target: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
+    pub(crate) fn rotate(&mut self, target: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
         //           [target]
         //            /   \
         //        [pivot] [be_fallen]
