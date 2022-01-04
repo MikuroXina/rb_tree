@@ -38,7 +38,7 @@ impl<K, V> RedBlackTree<K, V> {
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
     fn insert_node(&mut self, new_node: NodeRef<K, V>, (target, idx): (NodeRef<K, V>, ChildIndex)) {
-        target.set_child(idx, Some(new_node));
+        unsafe { target.set_child(idx, new_node) };
 
         self.balance_after_insert(new_node);
     }
@@ -61,8 +61,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 if self.root == Some(node) {
                     self.root = None;
                 } else {
-                    let parent = node.parent().unwrap();
-                    parent.set_child(node.index_on_parent().unwrap(), None);
+                    let (parent, idx) = node.index_and_parent().unwrap();
+                    unsafe { parent.clear_child(idx) }
                 }
                 return unsafe { node.deallocate() };
             }
@@ -71,12 +71,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
         self.balance_after_remove(node);
 
-        if let Some(parent) = node.parent() {
-            parent.set_child(node.index_on_parent().unwrap(), replacement);
+        if let Some((parent, idx)) = node.index_and_parent() {
+            unsafe { parent.write_child(idx, replacement) }
         }
         if let Some(replacement) = replacement {
             debug_assert!(replacement.left().is_none());
-            replacement.set_child(ChildIndex::Left, node.left());
+            unsafe { replacement.write_child(ChildIndex::Left, node.left()) }
             if node.parent().is_none() {
                 self.root = Some(replacement);
             }
@@ -443,7 +443,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         if self.is_empty() {
             return None;
         }
-        self.search_node(key).ok().map(|n| n.key_value())
+        self.search_node(key).ok().map(|n| unsafe { n.key_value() })
     }
 
     /// Returns whether the map contains a value for the specified key.

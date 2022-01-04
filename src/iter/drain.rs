@@ -61,7 +61,7 @@ impl<K: fmt::Debug + Ord, V: fmt::Debug, F: FnMut(&K, &mut V) -> bool> fmt::Debu
 
 impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> DrainFilter<'a, K, V, F> {
     fn peek(&self) -> Option<(&K, &V)> {
-        self.current.map(|n| n.key_value())
+        self.current.map(|n| unsafe { n.key_value() })
     }
 }
 
@@ -95,7 +95,7 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                         };
                         self.current = curr.parent();
                     }
-                    let (k, v) = curr.key_value_mut();
+                    let (k, v) = unsafe { curr.key_value_mut() };
                     if (self.pred)(k, v) {
                         self.prev = PreviousStep::Parent;
                         return self.tree.remove_entry(k);

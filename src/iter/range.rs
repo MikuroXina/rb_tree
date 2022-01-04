@@ -84,11 +84,11 @@ where
     type Item = (&'a K, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.cut_left().map(|n| n.key_value())
+        self.0.cut_left().map(|n| unsafe { n.key_value() })
     }
 
     fn last(mut self) -> Option<Self::Item> {
-        self.0.cut_right().map(|n| n.key_value())
+        self.0.cut_right().map(|n| unsafe { n.key_value() })
     }
 
     fn min(mut self) -> Option<Self::Item> {
@@ -106,7 +106,7 @@ where
     V: 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.cut_right().map(|n| n.key_value())
+        self.0.cut_right().map(|n| unsafe { n.key_value() })
     }
 }
 
@@ -136,11 +136,11 @@ where
     type Item = (&'a K, &'a mut V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.0.cut_left().map(|n| n.key_value_mut())
+        self.0.cut_left().map(|n| unsafe { n.key_value_mut() })
     }
 
     fn last(mut self) -> Option<Self::Item> {
-        self.0.cut_right().map(|n| n.key_value_mut())
+        self.0.cut_right().map(|n| unsafe { n.key_value_mut() })
     }
 
     fn min(mut self) -> Option<Self::Item> {
@@ -158,7 +158,7 @@ where
     V: 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        self.0.cut_right().map(|n| n.key_value_mut())
+        self.0.cut_right().map(|n| unsafe { n.key_value_mut() })
     }
 }
 

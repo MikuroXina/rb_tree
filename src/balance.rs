@@ -21,15 +21,20 @@ impl<K, V> RedBlackTree<K, V> {
 
         if let Some((parent, idx)) = target.parent().zip(target.index_on_parent()) {
             // update `parent`'s child
-            parent.set_child(idx, Some(pivot));
+            unsafe { parent.set_child(idx, pivot) }
         } else {
-            pivot.make_root();
+            if let Some(parent) = pivot.parent() {
+                let idx = pivot.index_on_parent().unwrap();
+                unsafe { parent.clear_child(idx) }
+            }
             self.root = Some(pivot);
         }
-        // update `pivot`'s child
-        pivot.set_child(!pivot_idx, Some(target));
-        // update `node`'s child
-        target.set_child(pivot_idx, be_moved);
+        unsafe {
+            // update `pivot`'s child
+            pivot.set_child(!pivot_idx, target);
+            // update `node`'s child
+            target.write_child(pivot_idx, be_moved);
+        }
         pivot
     }
 
