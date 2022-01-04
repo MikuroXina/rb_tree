@@ -14,6 +14,23 @@ use std::iter::FusedIterator;
 
 use crate::RedBlackTree;
 
+#[derive(Debug, Clone, Copy)]
+enum PreviousStep {
+    Parent,
+    LeftChild,
+    RightChild,
+}
+
+impl PreviousStep {
+    fn is_left_child(self) -> bool {
+        matches!(self, Self::LeftChild)
+    }
+
+    fn is_right_child(self) -> bool {
+        matches!(self, Self::RightChild)
+    }
+}
+
 pub struct IntoIter<K, V> {
     range: LeafRange<K, V>,
     length: usize,

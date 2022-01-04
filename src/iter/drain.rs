@@ -1,4 +1,8 @@
-use crate::{node::NodeRef, RedBlackTree};
+use super::PreviousStep;
+use crate::{
+    node::{ChildIndex, NodeRef},
+    RedBlackTree,
+};
 
 use std::{fmt, iter::FusedIterator};
 
@@ -28,6 +32,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         DrainFilter {
             tree: self,
             current,
+            prev: PreviousStep::LeftChild,
             pred: f,
         }
     }
@@ -36,6 +41,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 pub struct DrainFilter<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> {
     tree: &'a mut RedBlackTree<K, V>,
     current: Option<NodeRef<K, V>>,
+    prev: PreviousStep,
     pred: F,
 }
 
@@ -63,15 +69,42 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            // FIXME: avoid visited nodes
-            let current = self.current?;
-            let (k, v) = current.key_value_mut();
-            self.current = current.right().or_else(|| current.parent());
-            if (self.pred)(k, v) {
-                return self.tree.remove_entry(k);
+        while let Some(curr) = self.current {
+            match self.prev {
+                PreviousStep::Parent => {
+                    // descended
+                    if let Some(left) = curr.left() {
+                        // go to left
+                        self.current = Some(left);
+                        continue;
+                    }
+                    self.prev = PreviousStep::LeftChild;
+                }
+                PreviousStep::LeftChild => {
+                    // ascended from left
+                    if let Some(right) = curr.right() {
+                        // go to right
+                        self.prev = PreviousStep::Parent;
+                        self.current = Some(right);
+                    } else {
+                        self.prev = PreviousStep::RightChild;
+                    }
+                    let (k, v) = curr.key_value_mut();
+                    self.current = curr.right().or_else(|| curr.parent());
+                    if (self.pred)(k, v) {
+                        return self.tree.remove_entry(k);
+                    }
+                }
+                PreviousStep::RightChild => {
+                    // ascended from right, so ascend again
+                    self.current = curr.parent();
+                    if let Some(ChildIndex::Left) = curr.index_on_parent() {
+                        self.prev = PreviousStep::LeftChild;
+                    }
+                }
             }
         }
+        None
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

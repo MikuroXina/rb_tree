@@ -1,5 +1,6 @@
 use std::{borrow, ops};
 
+use super::PreviousStep;
 use crate::{
     node::{ChildIndex, NodeRef},
     RedBlackTree,
@@ -29,13 +30,6 @@ impl<K, V> LeafRange<K, V> {
         let next = end.left().or_else(|| end.parent());
         std::mem::replace(&mut self.end, next).map(|p| unsafe { p.deallocate() })
     }
-}
-
-#[derive(Debug, Clone, Copy)]
-enum PreviousStep {
-    Parent,
-    LeftChild,
-    RightChild,
 }
 
 pub struct RefLeafRange<K, V> {
@@ -86,7 +80,7 @@ impl<K, V> RefLeafRange<K, V> {
                 }
                 PreviousStep::LeftChild => {
                     // ascended from left
-                    if self.start == self.end && matches!(self.end_prev, PreviousStep::RightChild) {
+                    if self.start == self.end && self.end_prev.is_right_child() {
                         // finish
                         self.start = None;
                         self.end = None;
@@ -125,8 +119,7 @@ impl<K, V> RefLeafRange<K, V> {
                 }
                 PreviousStep::RightChild => {
                     // ascended from right
-                    if self.start == self.end && matches!(self.start_prev, PreviousStep::LeftChild)
-                    {
+                    if self.start == self.end && self.start_prev.is_left_child() {
                         // finish
                         self.start = None;
                         self.end = None;
