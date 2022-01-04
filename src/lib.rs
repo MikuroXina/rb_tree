@@ -44,15 +44,16 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
-        let child = match node.children() {
+        let replacement = match node.children() {
             (Some(_), Some(right)) => {
                 let mut min_in_right = right;
                 while let Some(min) = min_in_right.left() {
                     min_in_right = min;
                 }
                 while min_in_right.index_on_parent().unwrap().is_left() {
-                    self.rotate(min_in_right, ChildIndex::Left);
-                    min_in_right = min_in_right.parent().unwrap();
+                    let parent = min_in_right.parent().unwrap();
+                    self.rotate(parent, ChildIndex::Left);
+                    min_in_right = parent;
                 }
                 Some(min_in_right)
             }
@@ -62,15 +63,15 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             }
             (l, r) => l.xor(r),
         };
-        debug_assert!(child.and_then(|c| c.left()).is_none());
 
         self.balance_after_remove(node);
 
         if let Some(parent) = node.parent() {
-            parent.set_child(node.index_on_parent().unwrap(), child);
+            parent.set_child(node.index_on_parent().unwrap(), replacement);
         }
-        if let Some(child) = child {
-            child.set_child(ChildIndex::Left, node.left());
+        if let Some(replacement) = replacement {
+            debug_assert!(replacement.left().is_none());
+            replacement.set_child(ChildIndex::Left, node.left());
         }
         unsafe { node.deallocate() }
     }
