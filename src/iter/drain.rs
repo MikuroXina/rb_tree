@@ -87,11 +87,17 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                         self.prev = PreviousStep::Parent;
                         self.current = Some(right);
                     } else {
-                        self.prev = PreviousStep::RightChild;
+                        // ascended from right, so ascend again
+                        self.prev = if let Some(ChildIndex::Left) = curr.index_on_parent() {
+                            PreviousStep::LeftChild
+                        } else {
+                            PreviousStep::RightChild
+                        };
+                        self.current = curr.parent();
                     }
                     let (k, v) = curr.key_value_mut();
-                    self.current = curr.right().or_else(|| curr.parent());
                     if (self.pred)(k, v) {
+                        self.prev = PreviousStep::Parent;
                         return self.tree.remove_entry(k);
                     }
                 }
