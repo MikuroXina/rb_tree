@@ -37,11 +37,13 @@ impl<K, V> RedBlackTree<K, V> {
 
         if let Some((index, parent)) = pivot.index_and_parent() {
             debug_assert_eq!(parent.child(index), Some(pivot));
+            debug_assert_eq!(pivot.parent(), Some(parent));
         } else {
             debug_assert_eq!(self.root, Some(pivot));
             debug_assert!(pivot.parent().is_none());
         }
         debug_assert_eq!(pivot.child(!pivot_idx), Some(target));
+        debug_assert_eq!(target.parent(), Some(pivot));
         debug_assert_eq!(target.child(pivot_idx), be_moved);
 
         pivot
