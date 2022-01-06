@@ -19,17 +19,14 @@ impl<K, V> RedBlackTree<K, V> {
         let pivot = target.child(pivot_idx).expect("pivot must be found");
         let be_moved = pivot.child(!pivot_idx);
 
-        if let Some((parent, idx)) = target.parent().zip(target.index_on_parent()) {
+        if let Some((idx, parent)) = target.index_and_parent() {
             // update `parent`'s child
-            unsafe { parent.set_child(idx, pivot) }
-        } else {
-            if let Some(parent) = pivot.parent() {
-                let idx = pivot.index_on_parent().unwrap();
-                unsafe {
-                    parent.clear_child(idx);
-                }
+            unsafe {
+                parent.clear_child(idx);
+                parent.set_child(idx, pivot);
             }
-            self.root = Some(pivot);
+        } else {
+            self.root = unsafe { pivot.make_root() };
         }
         unsafe {
             // update `pivot`'s child
