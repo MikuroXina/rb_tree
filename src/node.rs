@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, ptr::NonNull};
+use std::{borrow::Borrow, fmt, ptr::NonNull};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
@@ -42,8 +42,13 @@ pub struct Node<K, V> {
     value: V,
 }
 
-#[derive(Debug)]
 pub struct NodeRef<K, V>(NonNull<Node<K, V>>);
+
+impl<K, V> fmt::Debug for NodeRef<K, V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("NodeRef").field(&self.0).finish()
+    }
+}
 
 impl<K, V> Clone for NodeRef<K, V> {
     fn clone(&self) -> Self {
