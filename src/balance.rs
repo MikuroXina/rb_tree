@@ -37,6 +37,16 @@ impl<K, V> RedBlackTree<K, V> {
             // update `node`'s child
             target.write_child(pivot_idx, be_moved);
         }
+
+        if let Some((index, parent)) = pivot.index_and_parent() {
+            debug_assert_eq!(parent.child(index), Some(pivot));
+        } else {
+            debug_assert_eq!(self.root, Some(pivot));
+            debug_assert!(pivot.parent().is_none());
+        }
+        debug_assert_eq!(pivot.child(!pivot_idx), Some(target));
+        debug_assert_eq!(target.child(pivot_idx), be_moved);
+
         pivot
     }
 
