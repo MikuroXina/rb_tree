@@ -267,33 +267,16 @@ impl<K, V> NodeRef<K, V> {
     /// # Safety
     ///
     /// The child on `idx` must be empty before calling this.
-    pub unsafe fn set_child(mut self, idx: ChildIndex, mut new_child: Self) {
-        debug_assert_ne!(self, new_child);
-        let this = self.0.as_mut();
-        new_child.0.as_mut().parent = Some(self);
-        debug_assert!(
-            match idx {
-                ChildIndex::Left => this.children.0.replace(new_child),
-                ChildIndex::Right => this.children.1.replace(new_child),
-            }
-            .is_none(),
-            "the child on {:?} must not occupied",
-            idx
-        );
-    }
-
-    /// Overwrites the child link on `idx` with `new_child`.
-    ///
-    /// # Safety
-    ///
-    /// The child link on `idx` must be extracted with [`set_child`] or [`clear_child`] before calling this.
-    pub unsafe fn write_child(self, idx: ChildIndex, new_child: Option<Self>) -> Option<Self> {
+    pub unsafe fn set_child(mut self, idx: ChildIndex, new_child: impl Into<Option<Self>>) {
+        let new_child = new_child.into();
         debug_assert_ne!(Some(self), new_child);
-        if let Some(new_child) = new_child {
-            self.set_child(idx, new_child);
-            None
-        } else {
-            Some(self.clear_child(idx))
+        let this = self.0.as_mut();
+        if let Some(mut new_child) = new_child {
+            new_child.0.as_mut().parent = Some(self);
+        }
+        match idx {
+            ChildIndex::Left => this.children.0 = new_child,
+            ChildIndex::Right => this.children.1 = new_child,
         }
     }
 

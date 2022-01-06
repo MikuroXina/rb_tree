@@ -32,7 +32,7 @@ impl<K, V> RedBlackTree<K, V> {
             // update `pivot`'s child
             pivot.set_child(!pivot_idx, target);
             // update `node`'s child
-            target.write_child(pivot_idx, be_moved);
+            target.set_child(pivot_idx, be_moved);
         }
 
         if let Some((index, parent)) = pivot.index_and_parent() {

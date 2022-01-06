@@ -75,13 +75,13 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
         if let Some((idx, parent)) = node.index_and_parent() {
             unsafe {
-                parent.write_child(idx, replacement);
+                parent.set_child(idx, replacement);
             }
         }
         if let Some(replacement) = replacement {
             debug_assert!(replacement.left().is_none());
             unsafe {
-                replacement.write_child(ChildIndex::Left, node.left());
+                replacement.set_child(ChildIndex::Left, node.left());
             }
             if node.parent().is_none() {
                 self.root = Some(replacement);
