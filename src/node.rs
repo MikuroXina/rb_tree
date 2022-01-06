@@ -103,6 +103,16 @@ impl<K, V> NodeRef<K, V> {
         (this.key, this.value)
     }
 
+    /// Makes the node as root, has no parent.
+    ///
+    /// # Safety
+    ///
+    /// You must set the node into `root` of the tree.
+    pub unsafe fn make_root(mut self) -> Option<Self> {
+        self.0.as_mut().parent = None;
+        Some(self)
+    }
+
     /// Returns the borrowed key reference of the node.
     pub fn key<'a, Q>(self) -> &'a Q
     where
@@ -258,6 +268,7 @@ impl<K, V> NodeRef<K, V> {
     ///
     /// The child on `idx` must be empty before calling this.
     pub unsafe fn set_child(mut self, idx: ChildIndex, mut new_child: Self) {
+        debug_assert_ne!(self, new_child);
         let this = self.0.as_mut();
         new_child.0.as_mut().parent = Some(self);
         debug_assert!(
@@ -277,6 +288,7 @@ impl<K, V> NodeRef<K, V> {
     ///
     /// The child link on `idx` must be extracted with [`set_child`] or [`clear_child`] before calling this.
     pub unsafe fn write_child(self, idx: ChildIndex, new_child: Option<Self>) -> Option<Self> {
+        debug_assert_ne!(Some(self), new_child);
         if let Some(new_child) = new_child {
             self.set_child(idx, new_child);
             None
