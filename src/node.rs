@@ -84,7 +84,7 @@ impl<K, V> NodeRef<K, V> {
     /// This method must be called only once.
     pub unsafe fn deallocate(mut self) -> (K, V) {
         let this = self.0.as_mut();
-        if let Some((parent, idx)) = self.index_and_parent() {
+        if let Some((idx, parent)) = self.index_and_parent() {
             parent.clear_child(idx);
             this.parent = None;
         }
@@ -292,8 +292,8 @@ impl<K, V> NodeRef<K, V> {
     }
 
     /// Returns the parent node and where the node is on its parent.
-    pub fn index_and_parent(self) -> Option<(Self, ChildIndex)> {
-        self.parent().zip(self.index_on_parent())
+    pub fn index_and_parent(self) -> Option<(ChildIndex, Self)> {
+        self.index_on_parent().zip(self.parent())
     }
 }
 

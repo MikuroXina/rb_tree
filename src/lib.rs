@@ -61,7 +61,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 if self.root == Some(node) {
                     self.root = None;
                 } else {
-                    let (parent, idx) = node.index_and_parent().unwrap();
+                    let (idx, parent) = node.index_and_parent().unwrap();
                     unsafe {
                         parent.clear_child(idx);
                     }
@@ -73,7 +73,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
         self.balance_after_remove(node);
 
-        if let Some((parent, idx)) = node.index_and_parent() {
+        if let Some((idx, parent)) = node.index_and_parent() {
             unsafe {
                 parent.write_child(idx, replacement);
             }
