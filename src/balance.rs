@@ -45,8 +45,6 @@ impl<K, V> RedBlackTree<K, V> {
         debug_assert_eq!(target.parent(), Some(pivot));
         debug_assert_eq!(target.child(pivot_idx), be_moved);
 
-        self.assert_tree();
-
         pivot
     }
 
