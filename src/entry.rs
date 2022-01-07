@@ -126,6 +126,7 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     ///     .or_insert(42);
     /// assert_eq!(map["poneyland"], 43);
     /// ```
+    #[must_use]
     pub fn and_modify<F: FnOnce(&mut V)>(self, f: F) -> Self {
         if let Some(entry) = self.tree.get_mut(&self.key) {
             f(entry);
