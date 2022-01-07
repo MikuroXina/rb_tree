@@ -5,7 +5,6 @@ use crate::{
 
 impl<K, V> RedBlackTree<K, V> {
     pub(crate) fn rotate(&mut self, target: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
-        self.assert_tree();
         //           [target]
         //            /   \
         //        [pivot] [be_fallen]
@@ -222,6 +221,7 @@ impl<K, V> RedBlackTree<K, V> {
         };
         while let Some((depth, node)) = stack.pop() {
             if node.is_red() {
+                eprintln!("{:?}", node.children());
                 assert!(node.left().map_or(true, |n| n.is_black()));
                 assert!(node.right().map_or(true, |n| n.is_black()));
             }
