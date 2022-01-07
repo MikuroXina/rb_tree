@@ -53,17 +53,16 @@ impl<K, V> RedBlackTree<K, V> {
     }
 
     pub(crate) fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
-        self.assert_tree();
         loop {
             if target.parent().is_none() || target.parent().unwrap().is_black() {
                 // if the parent is black or none, the tree is well balanced.
-                return;
+                break;
             }
             // the parent is red
             if target.grandparent().is_none() {
                 // if the parent is red and no grandparent exists, the root parent will be black.
                 target.parent().unwrap().set_color(Color::Black);
-                return;
+                break;
             }
             // the parent is red and the grandparent exists
             if target.uncle().map_or(false, |uncle| uncle.is_red()) {
@@ -116,12 +115,12 @@ impl<K, V> RedBlackTree<K, V> {
             // (target) (grandparent) | (grandparent) (target)
             //            \           |      /
             //          [uncle]       |   [uncle]
-            return;
+            break;
         }
+        self.assert_tree();
     }
 
     pub(crate) fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
-        self.assert_tree();
         while let Some(parent) = target.parent() {
             let sibling = target.sibling();
             let close_nephew = target.close_nephew();
@@ -202,6 +201,7 @@ impl<K, V> RedBlackTree<K, V> {
             // the parent node needs to re-balance.
             target = parent;
         }
+        self.assert_tree();
     }
 
     #[cfg(not(test))]
