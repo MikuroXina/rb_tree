@@ -5,6 +5,7 @@ use crate::{
 
 impl<K, V> RedBlackTree<K, V> {
     pub(crate) fn rotate(&mut self, target: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
+        self.assert_tree();
         //           [target]
         //            /   \
         //        [pivot] [be_fallen]
@@ -46,10 +47,13 @@ impl<K, V> RedBlackTree<K, V> {
         debug_assert_eq!(target.parent(), Some(pivot));
         debug_assert_eq!(target.child(pivot_idx), be_moved);
 
+        self.assert_tree();
+
         pivot
     }
 
     pub(crate) fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
+        self.assert_tree();
         loop {
             if target.parent().is_none() || target.parent().unwrap().is_black() {
                 // if the parent is black or none, the tree is well balanced.
@@ -117,6 +121,7 @@ impl<K, V> RedBlackTree<K, V> {
     }
 
     pub(crate) fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
+        self.assert_tree();
         while let Some(parent) = target.parent() {
             let sibling = target.sibling();
             let close_nephew = target.close_nephew();
@@ -197,5 +202,42 @@ impl<K, V> RedBlackTree<K, V> {
             // the parent node needs to re-balance.
             target = parent;
         }
+    }
+
+    #[cfg(not(test))]
+    #[inline]
+    fn assert_tree(&self) {}
+
+    #[cfg(test)]
+    fn assert_tree(&self) {
+        if self.root.is_none() {
+            return;
+        }
+        let mut stack = vec![(1usize, self.root.unwrap())];
+        let mut min_depth = isize::MAX as usize;
+        let mut max_depth = 0;
+        let mut update_depth = |depth| {
+            min_depth = min_depth.min(depth);
+            max_depth = max_depth.max(depth);
+        };
+        while let Some((depth, node)) = stack.pop() {
+            if node.is_red() {
+                assert!(node.left().map_or(true, |n| n.is_black()));
+                assert!(node.right().map_or(true, |n| n.is_black()));
+            }
+
+            let children = node.children();
+            if let Some(c) = children.0 {
+                stack.push((depth + 1, c));
+            } else {
+                update_depth(depth);
+            }
+            if let Some(c) = children.1 {
+                stack.push((depth + 1, c));
+            } else {
+                update_depth(depth);
+            }
+        }
+        assert!(min_depth * 2 <= max_depth)
     }
 }
