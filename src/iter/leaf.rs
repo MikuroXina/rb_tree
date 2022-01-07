@@ -6,12 +6,12 @@ use crate::{
     RedBlackTree,
 };
 
-pub struct LeafRange<K, V> {
+pub struct DyingLeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
     end: Option<NodeRef<K, V>>,
 }
 
-impl<K, V> LeafRange<K, V> {
+impl<K, V> DyingLeafRange<K, V> {
     pub fn new(tree: RedBlackTree<K, V>) -> Self {
         let start = tree.first_node();
         let end = tree.last_node();
@@ -22,12 +22,14 @@ impl<K, V> LeafRange<K, V> {
     pub fn cut_left(&mut self) -> Option<(K, V)> {
         let start = self.start?;
         let next = start.right().or_else(|| start.parent());
+        // Safety: The dying reference is deallocated.
         std::mem::replace(&mut self.start, next).map(|p| unsafe { p.deallocate() })
     }
 
     pub fn cut_right(&mut self) -> Option<(K, V)> {
         let end = self.end?;
         let next = end.left().or_else(|| end.parent());
+        // Safety: The dying reference is deallocated.
         std::mem::replace(&mut self.end, next).map(|p| unsafe { p.deallocate() })
     }
 }

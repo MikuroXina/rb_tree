@@ -32,7 +32,7 @@ impl PreviousStep {
 }
 
 pub struct IntoIter<K, V> {
-    range: LeafRange<K, V>,
+    range: DyingLeafRange<K, V>,
     length: usize,
 }
 
@@ -94,7 +94,7 @@ impl<K, V> IntoIterator for RedBlackTree<K, V> {
     fn into_iter(self) -> Self::IntoIter {
         let length = self.len;
         IntoIter {
-            range: LeafRange::new(self),
+            range: DyingLeafRange::new(self),
             length,
         }
     }

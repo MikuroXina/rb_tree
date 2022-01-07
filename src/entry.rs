@@ -48,16 +48,19 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// assert_eq!(map["poneyland"], 12);
     /// ```
     pub fn or_insert(self, default: V) -> &'a mut V {
-        if self.tree.root.is_none() {
-            let root = NodeRef::new(self.key, default);
-            self.tree.root = Some(root);
-            root.value_mut()
-        } else if let Err(target) = self.tree.search_node(&self.key) {
-            let node = NodeRef::new(self.key, default);
-            self.tree.insert_node(node, target);
-            node.value_mut()
-        } else {
-            self.tree.get_mut(&self.key).unwrap()
+        // Safety: The return value will not live longer than `tree`.
+        unsafe {
+            if self.tree.root.is_none() {
+                let root = NodeRef::new(self.key, default);
+                self.tree.root = Some(root);
+                root.value_mut()
+            } else if let Err(target) = self.tree.search_node(&self.key) {
+                let node = NodeRef::new(self.key, default);
+                self.tree.insert_node(node, target);
+                node.value_mut()
+            } else {
+                self.tree.get_mut(&self.key).unwrap()
+            }
         }
     }
 
@@ -92,18 +95,21 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// assert_eq!(map["poneyland"], 9);
     /// ```
     pub fn or_insert_with_key<F: FnOnce(&K) -> V>(self, default: F) -> &'a mut V {
-        if self.tree.root.is_none() {
-            let default = default(&self.key);
-            let root = NodeRef::new(self.key, default);
-            self.tree.root = Some(root);
-            root.value_mut()
-        } else if let Err(target) = self.tree.search_node(&self.key) {
-            let default = default(&self.key);
-            let node = NodeRef::new(self.key, default);
-            self.tree.insert_node(node, target);
-            node.value_mut()
-        } else {
-            self.tree.get_mut(&self.key).unwrap()
+        // Safety: The return value will not live longer than `tree`.
+        unsafe {
+            if self.tree.root.is_none() {
+                let default = default(&self.key);
+                let root = NodeRef::new(self.key, default);
+                self.tree.root = Some(root);
+                root.value_mut()
+            } else if let Err(target) = self.tree.search_node(&self.key) {
+                let default = default(&self.key);
+                let node = NodeRef::new(self.key, default);
+                self.tree.insert_node(node, target);
+                node.value_mut()
+            } else {
+                self.tree.get_mut(&self.key).unwrap()
+            }
         }
     }
 

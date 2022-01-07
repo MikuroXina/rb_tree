@@ -84,10 +84,12 @@ where
     type Item = (&'a K, &'a V);
 
     fn next(&mut self) -> Option<Self::Item> {
+        // Safety: The reference will not live longer than the tree.
         self.0.cut_left().map(|n| unsafe { n.key_value() })
     }
 
     fn last(mut self) -> Option<Self::Item> {
+        // Safety: The reference will not live longer than the tree.
         self.0.cut_right().map(|n| unsafe { n.key_value() })
     }
 
@@ -106,6 +108,7 @@ where
     V: 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
+        // Safety: The reference will not live longer than the tree.
         self.0.cut_right().map(|n| unsafe { n.key_value() })
     }
 }
@@ -136,10 +139,12 @@ where
     type Item = (&'a K, &'a mut V);
 
     fn next(&mut self) -> Option<Self::Item> {
+        // Safety: The mutable reference will not live longer than the tree.
         self.0.cut_left().map(|n| unsafe { n.key_value_mut() })
     }
 
     fn last(mut self) -> Option<Self::Item> {
+        // Safety: The mutable reference will not live longer than the tree.
         self.0.cut_right().map(|n| unsafe { n.key_value_mut() })
     }
 
@@ -158,6 +163,7 @@ where
     V: 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
+        // Safety: The mutable reference will not live longer than the tree.
         self.0.cut_right().map(|n| unsafe { n.key_value_mut() })
     }
 }

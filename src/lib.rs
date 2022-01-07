@@ -1,3 +1,5 @@
+#![deny(clippy::undocumented_unsafe_blocks)]
+
 mod balance;
 pub mod entry;
 pub mod iter;
@@ -38,6 +40,9 @@ impl<K, V> RedBlackTree<K, V> {
 // private methods
 impl<K: Ord, V> RedBlackTree<K, V> {
     fn insert_node(&mut self, new_node: NodeRef<K, V>, (target, idx): (NodeRef<K, V>, ChildIndex)) {
+        debug_assert!(target.child(idx).is_none());
+
+        // Safety: the child entry of the target is empty.
         unsafe { target.set_child(idx, new_node) };
 
         self.balance_after_insert(new_node);
@@ -58,35 +63,35 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 Some(min_in_right)
             }
             (None, None) => {
-                if self.root == Some(node) {
-                    self.root = None;
-                } else {
-                    let (idx, parent) = node.index_and_parent().unwrap();
-                    unsafe {
+                // Safety: `node` is a leaf node, so just deallocate it.
+                unsafe {
+                    if self.root == Some(node) {
+                        self.root = None;
+                    } else {
+                        let (idx, parent) = node.index_and_parent().unwrap();
                         parent.clear_child(idx);
                     }
+                    return node.deallocate();
                 }
-                return unsafe { node.deallocate() };
             }
             (l, r) => l.xor(r),
         };
 
         self.balance_after_remove(node);
 
-        if let Some((idx, parent)) = node.index_and_parent() {
-            unsafe {
+        // Safety: The left child of the `node` is promoted, the entry is replaced with `replacement` node, and `node` is deallocated.
+        unsafe {
+            if let Some((idx, parent)) = node.index_and_parent() {
                 parent.set_child(idx, replacement);
             }
-        }
-        if let Some(replacement) = replacement {
-            unsafe {
+            if let Some(replacement) = replacement {
                 replacement.set_child(ChildIndex::Left, node.left());
+                if node.parent().is_none() {
+                    self.root = replacement.make_root();
+                }
             }
-            if node.parent().is_none() {
-                self.root = Some(replacement);
-            }
+            node.deallocate()
         }
-        unsafe { node.deallocate() }
     }
 
     fn search_node<Q>(&self, key: &Q) -> Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>
@@ -100,7 +105,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
 impl<K, V> Drop for RedBlackTree<K, V> {
     fn drop(&mut self) {
-        drop(unsafe { std::ptr::read(self) }.into_iter());
+        // Safety: `self` will not be used after.
+        unsafe { drop(std::ptr::read(self).into_iter()) }
     }
 }
 
@@ -330,7 +336,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         match self.search_node(&key) {
             Ok(found) => {
                 // replace
-                let old_v = std::mem::replace(found.value_mut(), value);
+                // Safety: The mutable reference is temporary.
+                let old_v = std::mem::replace(unsafe { found.value_mut() }, value);
                 Some((key, old_v))
             }
             Err(target) => {
@@ -425,7 +432,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         if self.is_empty() {
             return None;
         }
-        self.search_node(key).ok().map(|n| n.value_mut())
+        // Safety: The mutable reference will not live longer than `&mut self`.
+        self.search_node(key).ok().map(|n| unsafe { n.value_mut() })
     }
 
     /// Returns the key-value pair corresponding to the supplied key.
@@ -448,6 +456,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         if self.is_empty() {
             return None;
         }
+        // Safety: The reference of key-value pair will not live longer than `&self`.
         self.search_node(key).ok().map(|n| unsafe { n.key_value() })
     }
 

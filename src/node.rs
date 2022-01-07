@@ -120,6 +120,7 @@ impl<K, V> NodeRef<K, V> {
         V: 'a,
         Q: ?Sized,
     {
+        // Safety: The mutable reference of the key will not exist.
         unsafe { self.0.as_ref() }.key.borrow()
     }
 
@@ -156,15 +157,16 @@ impl<K, V> NodeRef<K, V> {
     /// # Safety
     ///
     /// The shared reference of its value must not exist.
-    pub fn value_mut<'a>(mut self) -> &'a mut V
+    pub unsafe fn value_mut<'a>(mut self) -> &'a mut V
     where
         K: 'a,
     {
-        &mut unsafe { self.0.as_mut() }.value
+        &mut self.0.as_mut().value
     }
 
     /// Returns whether the node colored as red.
     pub fn is_red(self) -> bool {
+        // Safety: Only reading the color.
         unsafe { self.0.as_ref() }.color == Color::Red
     }
 
@@ -175,16 +177,19 @@ impl<K, V> NodeRef<K, V> {
 
     /// Returns the color of the node.
     pub fn color(self) -> Color {
+        // Safety: Only reading the color.
         unsafe { self.0.as_ref() }.color
     }
 
     /// Colors the node with [`Color`].
     pub fn set_color(mut self, color: Color) {
+        // Safety: Only writing the color.
         unsafe { self.0.as_mut() }.color = color;
     }
 
     /// Returns the parent node of the node.
     pub fn parent(self) -> Option<Self> {
+        // Safety: Using the parent node will be guaranteed on caller.
         unsafe { self.0.as_ref() }.parent
     }
 
@@ -221,12 +226,14 @@ impl<K, V> NodeRef<K, V> {
 
     /// Returns the children of the node.
     pub fn children(self) -> (Option<Self>, Option<Self>) {
+        // Safety: Using the children node will be guaranteed on caller.
         let this = unsafe { self.0.as_ref() };
         this.children
     }
 
     /// Returns the child of the node.
     pub fn child(self, idx: ChildIndex) -> Option<Self> {
+        // Safety: Using the child node will be guaranteed on caller.
         let this = unsafe { self.0.as_ref() };
         match idx {
             ChildIndex::Left => this.children.0,
