@@ -216,7 +216,9 @@ impl<K, V> RedBlackTree<K, V> {
             min_depth = min_depth.min(depth);
             max_depth = max_depth.max(depth);
         };
+        let mut node_count = 0;
         while let Some((depth, node)) = stack.pop() {
+            node_count += 1;
             if node.is_red() {
                 assert!(node.left().map_or(true, |n| n.is_black()));
                 assert!(node.right().map_or(true, |n| n.is_black()));
@@ -234,6 +236,7 @@ impl<K, V> RedBlackTree<K, V> {
                 update_depth(depth);
             }
         }
-        assert!(max_depth <= min_depth * 2)
+        assert!(max_depth <= min_depth * 2);
+        assert_eq!(self.len, node_count);
     }
 }
