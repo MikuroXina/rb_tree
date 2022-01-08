@@ -260,6 +260,7 @@ impl<K, V> RedBlackTree<K, V> {
     ///
     /// map.insert(1, "a");
     /// ```
+    #[inline]
     pub const fn new() -> Self {
         Self {
             root: None,
@@ -280,6 +281,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// a.clear();
     /// assert!(a.is_empty());
     /// ```
+    #[inline]
     pub fn clear(&mut self) {
         *self = Self::new();
     }
@@ -296,6 +298,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// a.insert(1, "a");
     /// assert!(!a.is_empty());
     /// ```
+    #[inline]
     pub const fn is_empty(&self) -> bool {
         self.root.is_none()
     }
@@ -312,6 +315,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// a.insert(1, "a");
     /// assert_eq!(a.len(), 1);
     /// ```
+    #[inline]
     pub const fn len(&self) -> usize {
         self.len
     }
@@ -349,6 +353,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     ///     (5, "f"),
     /// ]);
     /// ```
+    #[inline]
     pub fn append(&mut self, other: &mut Self) {
         if other.is_empty() {
             return;
@@ -378,6 +383,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map.insert(37, "c"), Some((37, "b")));
     /// assert_eq!(map[&37], "c");
     /// ```
+    #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
         if self.is_empty() {
             self.len += 1;
@@ -410,6 +416,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
     /// ```
+    #[inline]
     pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
@@ -428,6 +435,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map.remove_entry(&1), Some((1, "a")));
     /// assert_eq!(map.remove_entry(&1), None);
     /// ```
+    #[inline]
     pub fn remove_entry<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Borrow<Q>,
@@ -453,6 +461,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map.get(&1), Some(&"a"));
     /// assert_eq!(map.get(&2), None);
     /// ```
+    #[inline]
     pub fn get<Q>(&self, key: &Q) -> Option<&V>
     where
         K: Borrow<Q>,
@@ -475,6 +484,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// }
     /// assert_eq!(map[&1], "b");
     /// ```
+    #[inline]
     pub fn get_mut<Q>(&mut self, key: &Q) -> Option<&mut V>
     where
         K: Borrow<Q>,
@@ -499,6 +509,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map.get_key_value(&1), Some((&1, &"a")));
     /// assert_eq!(map.get_key_value(&2), None);
     /// ```
+    #[inline]
     pub fn get_key_value<Q>(&self, key: &Q) -> Option<(&K, &V)>
     where
         K: Borrow<Q>,
@@ -523,6 +534,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map.contains_key(&1), true);
     /// assert_eq!(map.contains_key(&2), false);
     /// ```
+    #[inline]
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
         K: Borrow<Q>,
@@ -542,6 +554,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// map.retain(|&k, _| k % 2 == 0);
     /// assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
     /// ```
+    #[inline]
     pub fn retain<F: FnMut(&K, &mut V) -> bool>(&mut self, mut f: F) {
         self.drain_filter(move |k, v| !f(k, v));
     }

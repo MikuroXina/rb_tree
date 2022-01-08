@@ -27,6 +27,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(evens.into_keys().collect::<Vec<_>>(), vec![0, 2, 4, 6]);
     /// assert_eq!(odds.into_keys().collect::<Vec<_>>(), vec![1, 3, 5, 7]);
     /// ```
+    #[inline]
     pub fn drain_filter<F: FnMut(&K, &mut V) -> bool>(&mut self, f: F) -> DrainFilter<K, V, F> {
         let current = self.first_node();
         DrainFilter {

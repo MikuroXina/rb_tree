@@ -21,6 +21,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// let values: Vec<&str> = a.into_values().collect();
     /// assert_eq!(values, vec!["hello", "goodbye"]);
     /// ```
+    #[inline]
     pub fn into_values(self) -> IntoValues<K, V> {
         IntoValues(self.into_iter())
     }
@@ -39,6 +40,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// let values: Vec<_> = a.values().copied().collect();
     /// assert_eq!(values, ["hello", "goodbye"]);
     /// ```
+    #[inline]
     pub fn values(&self) -> Values<K, V> {
         Values(self.into_iter(), self.len())
     }
@@ -64,6 +66,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     ///     String::from("goodbye!")
     /// ]);
     /// ```
+    #[inline]
     pub fn values_mut(&mut self) -> ValuesMut<K, V> {
         let len = self.len();
         ValuesMut(self.into_iter(), len)

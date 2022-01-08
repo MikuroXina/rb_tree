@@ -22,6 +22,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// }
     /// assert_eq!(map.range(4..).next(), Some((&5, &"b")));
     /// ```
+    #[inline]
     pub fn range<I, R>(&self, range: R) -> Range<K, V>
     where
         I: Ord + ?Sized,
@@ -49,6 +50,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     ///     println!("{} => {}", name, balance);
     /// }
     /// ```
+    #[inline]
     pub fn range_mut<I, R>(&mut self, range: R) -> RangeMut<K, V>
     where
         I: Ord + ?Sized,

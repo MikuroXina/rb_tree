@@ -18,6 +18,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(count["b"], 2);
     /// assert_eq!(count["c"], 1);
     /// ```
+    #[inline]
     pub fn entry(&mut self, key: K) -> Entry<K, V> {
         Entry { key, tree: self }
     }
@@ -31,6 +32,7 @@ pub struct Entry<'a, K: Ord, V> {
 
 impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// Returns a reference to this entry's key.
+    #[inline]
     pub fn key(&self) -> &K {
         &self.key
     }
@@ -47,6 +49,7 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     ///
     /// assert_eq!(map["poneyland"], 12);
     /// ```
+    #[inline]
     pub fn or_insert(self, default: V) -> &'a mut V {
         // Safety: The return value will not live longer than `tree`.
         unsafe {
@@ -76,6 +79,7 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     ///
     /// assert_eq!(map["poneyland"], "hoho".to_string());
     /// ```
+    #[inline]
     pub fn or_insert_with<F: FnOnce() -> V>(self, default: F) -> &'a mut V {
         self.or_insert_with_key(move |_| default())
     }
@@ -94,6 +98,7 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     ///
     /// assert_eq!(map["poneyland"], 9);
     /// ```
+    #[inline]
     pub fn or_insert_with_key<F: FnOnce(&K) -> V>(self, default: F) -> &'a mut V {
         // Safety: The return value will not live longer than `tree`.
         unsafe {
@@ -133,6 +138,7 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// assert_eq!(map["poneyland"], 43);
     /// ```
     #[must_use]
+    #[inline]
     pub fn and_modify<F: FnOnce(&mut V)>(self, f: F) -> Self {
         if let Some(entry) = self.tree.get_mut(&self.key) {
             f(entry);
@@ -152,6 +158,7 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     ///
     /// assert_eq!(map["poneyland"], None);
     /// ```
+    #[inline]
     pub fn or_default(self) -> &'a mut V
     where
         V: Default,

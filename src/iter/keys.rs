@@ -21,6 +21,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(keys.next(), Some(2));
     /// assert_eq!(keys.next(), None);
     /// ```
+    #[inline]
     pub fn into_keys(self) -> IntoKeys<K, V> {
         IntoKeys(self.into_iter())
     }
@@ -39,6 +40,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// let keys: Vec<i32> = a.keys().copied().collect();
     /// assert_eq!(keys, [1, 2]);
     /// ```
+    #[inline]
     pub fn keys(&self) -> Keys<K, V> {
         Keys(self.into_iter(), self.len())
     }

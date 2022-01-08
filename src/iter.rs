@@ -55,6 +55,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(iter.next(), Some((&3, &"c")));
     /// assert_eq!(iter.next(), None);
     /// ```
+    #[inline]
     pub fn iter(&self) -> Range<K, V> {
         self.range(..)
     }
@@ -81,6 +82,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// assert_eq!(map[&"b"], 12);
     /// assert_eq!(map[&"c"], 13);
     /// ```
+    #[inline]
     pub fn iter_mut(&mut self) -> RangeMut<K, V> {
         self.range_mut(..)
     }
