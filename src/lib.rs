@@ -93,7 +93,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             //     ...
             unsafe {
                 let node_color = node.color();
-                node.clear_child(ChildIndex::Right);
+                node.set_child(ChildIndex::Right, None);
                 node.set_child(ChildIndex::Left, max_in_left.left());
                 node.set_color(max_in_left.color());
                 max_in_left.set_child(ChildIndex::Left, left);
