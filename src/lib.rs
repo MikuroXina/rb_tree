@@ -50,7 +50,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         self.balance_after_insert(new_node);
     }
 
-    fn remove_node(&mut self, mut node: NodeRef<K, V>) -> (K, V) {
+    fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
         debug_assert!(0 < self.len);
         if self.len == 1 {
             // Safety: There is only `node` in the tree, so just deallocate it.
@@ -96,7 +96,6 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 max_in_left.set_child(ChildIndex::Left, left);
                 max_in_left.set_child(ChildIndex::Right, right);
                 max_in_left.set_color(node_color);
-                node = max_in_left;
             }
         }
 
