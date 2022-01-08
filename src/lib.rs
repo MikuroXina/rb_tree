@@ -445,8 +445,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             return None;
         }
         let found = self.search_node(key).ok()?;
+        let ret = self.remove_node(found);
         self.len -= 1;
-        Some(self.remove_node(found))
+        Some(ret)
     }
 
     /// Returns a reference to the value corresponding to the key.

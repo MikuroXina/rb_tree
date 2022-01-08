@@ -236,11 +236,15 @@ impl<K, V> RedBlackTree<K, V> {
 
             let children = node.children();
             if let Some(c) = children.0 {
+                let back_ptr = c.parent().unwrap();
+                assert_eq!(back_ptr, node);
                 stack.push((depth + 1, c));
             } else {
                 update_depth(depth);
             }
             if let Some(c) = children.1 {
+                let back_ptr = c.parent().unwrap();
+                assert_eq!(back_ptr, node);
                 stack.push((depth + 1, c));
             } else {
                 update_depth(depth);
