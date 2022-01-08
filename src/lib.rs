@@ -92,6 +92,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             //       /
             //     ...
             unsafe {
+                let (idx, parent) = node.index_and_parent().unwrap();
                 let node_color = node.color();
                 node.set_child(ChildIndex::Right, None);
                 node.set_child(ChildIndex::Left, max_in_left.left());
@@ -99,6 +100,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 max_in_left.set_child(ChildIndex::Left, left);
                 max_in_left.set_child(ChildIndex::Right, right);
                 max_in_left.set_color(node_color);
+                parent.set_child(idx, max_in_left);
             }
         }
 
