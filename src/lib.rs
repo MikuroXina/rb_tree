@@ -125,7 +125,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             //    parent
             //      |
             // (red_child)
-            //      |
+            //      |/
+            //      / will be cut
+            //     /|
             //    node
             unsafe {
                 let red_child_idx = red_child.index_on_parent().unwrap();
@@ -135,12 +137,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                 let (idx, parent) = node.index_and_parent().unwrap();
                 parent.set_child(idx, red_child);
                 red_child.set_color(Color::Black);
-                red_child.set_child(red_child_idx, node);
+                red_child.set_child(red_child_idx, None);
             }
+        } else {
+            // `node` is not the root, black, and has no children.
+            self.balance_after_remove(node);
         }
-
-        // `node` is not the root, black, and has no children.
-        self.balance_after_remove(node);
 
         // Safety: `node` was remove from the tree.
         unsafe { node.deallocate() }
