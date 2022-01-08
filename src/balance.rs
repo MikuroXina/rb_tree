@@ -218,7 +218,6 @@ impl<K, V> RedBlackTree<K, V> {
         };
         while let Some((depth, node)) = stack.pop() {
             if node.is_red() {
-                eprintln!("{:?}", node.children());
                 assert!(node.left().map_or(true, |n| n.is_black()));
                 assert!(node.right().map_or(true, |n| n.is_black()));
             }
