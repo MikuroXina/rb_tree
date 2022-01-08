@@ -129,8 +129,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             //    node
             unsafe {
                 let red_child_idx = red_child.index_on_parent().unwrap();
-                node.clear_child(ChildIndex::Left);
-                node.clear_child(ChildIndex::Right);
+                node.set_child(ChildIndex::Left, None);
+                node.set_child(ChildIndex::Right, None);
 
                 let (idx, parent) = node.index_and_parent().unwrap();
                 parent.set_child(idx, red_child);
