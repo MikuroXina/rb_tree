@@ -235,6 +235,6 @@ impl<K, V> RedBlackTree<K, V> {
                 update_depth(depth);
             }
         }
-        assert!(min_depth * 2 <= max_depth)
+        assert!(max_depth <= min_depth * 2)
     }
 }
