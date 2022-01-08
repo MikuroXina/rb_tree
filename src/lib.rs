@@ -54,7 +54,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         debug_assert!(0 < self.len);
         if self.len == 1 {
             // Safety: There is only `node` in the tree, so just deallocate it.
-            unsafe { return node.deallocate() }
+            unsafe {
+                self.root = None;
+                return node.deallocate();
+            }
         }
         // `node` is not the root, has its parent.
         if let (Some(left), Some(right)) = node.children() {
