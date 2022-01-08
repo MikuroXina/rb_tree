@@ -77,9 +77,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             (l, r) => l.xor(r),
         };
 
-        self.balance_after_remove(node);
-
-        // Safety: The left child of the `node` is promoted, the entry is replaced with `replacement` node, and `node` is deallocated.
+        // Safety: The left child of the `node` is promoted, and the entry is replaced with `replacement` node.
         unsafe {
             if let Some((idx, parent)) = node.index_and_parent() {
                 parent.set_child(idx, replacement);
@@ -90,8 +88,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
                     self.root = replacement.make_root();
                 }
             }
-            node.deallocate()
         }
+
+        self.balance_after_remove(node);
+
+        // Safety: `node` is removed from the tree.
+        unsafe { node.deallocate() }
     }
 
     fn search_node<Q>(&self, key: &Q) -> Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>
