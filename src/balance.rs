@@ -148,6 +148,7 @@ impl<K, V> RedBlackTree<K, V> {
                 parent.set_color(Color::Red);
                 sibling.unwrap().set_color(Color::Black);
                 sibling = close_nephew;
+                debug_assert!(sibling.is_some());
                 distant_nephew = sibling.unwrap().child(!idx);
                 close_nephew = sibling.unwrap().child(idx);
                 // then:
