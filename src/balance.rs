@@ -230,38 +230,28 @@ impl<K, V> RedBlackTree<K, V> {
         if self.root.is_none() {
             return;
         }
-        let mut stack = vec![(1usize, self.root.unwrap())];
-        let mut min_depth = isize::MAX as usize;
-        let mut max_depth = 0;
-        let mut update_depth = |depth| {
-            min_depth = min_depth.min(depth);
-            max_depth = max_depth.max(depth);
-        };
+        let mut stack = vec![(0usize, self.root.unwrap())];
         let mut node_count = 0;
-        while let Some((depth, node)) = stack.pop() {
+        while let Some((black_count, node)) = stack.pop() {
             node_count += 1;
             if node.is_red() {
                 assert!(node.left().map_or(true, |n| n.is_black()));
                 assert!(node.right().map_or(true, |n| n.is_black()));
             }
-
+            let is_black = node.is_black() as usize;
             let children = node.children();
             if let Some(c) = children.0 {
                 let back_ptr = c.parent().unwrap();
                 assert_eq!(back_ptr, node);
-                stack.push((depth + 1, c));
-            } else {
-                update_depth(depth);
+                stack.push((black_count + is_black, c));
             }
             if let Some(c) = children.1 {
                 let back_ptr = c.parent().unwrap();
                 assert_eq!(back_ptr, node);
-                stack.push((depth + 1, c));
-            } else {
-                update_depth(depth);
+                stack.push((black_count + is_black, c));
             }
         }
-        assert!(max_depth <= min_depth * 2);
+        self.root.unwrap().black_height();
         assert_eq!(self.len, node_count);
     }
 }

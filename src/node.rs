@@ -113,6 +113,17 @@ impl<K, V> NodeRef<K, V> {
         Some(self)
     }
 
+    /// Calculates the black height, the number of black nodes from this node to the leaves of the tree.
+    pub fn black_height(self) -> usize {
+        let left = self.left().map_or(1, |l| l.black_height());
+        let right = self.right().map_or(1, |r| r.black_height());
+        debug_assert_eq!(
+            left, right,
+            "black height between left and right must be equals"
+        );
+        left + if self.is_black() { 1 } else { 0 }
+    }
+
     /// Returns the borrowed key reference of the node.
     pub fn key<'a, Q>(self) -> &'a Q
     where
