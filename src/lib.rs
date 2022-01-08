@@ -142,12 +142,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         // `node` is not the root, black, and has no children.
         self.balance_after_remove(node);
 
-        // Safety: `node` has no children, so it can be removed.
-        unsafe {
-            let (idx, parent) = node.index_and_parent().unwrap();
-            parent.clear_child(idx);
-            node.deallocate()
-        }
+        // Safety: `node` was remove from the tree.
+        unsafe { node.deallocate() }
     }
 
     fn search_node<Q>(&self, key: &Q) -> Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>
@@ -450,8 +446,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             return None;
         }
         let found = self.search_node(key).ok()?;
-        let ret = self.remove_node(found);
         self.len -= 1;
+        let ret = self.remove_node(found);
         Some(ret)
     }
 
