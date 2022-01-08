@@ -121,16 +121,22 @@ impl<K, V> RedBlackTree<K, V> {
     /// # Panics
     ///
     /// Panics if `target` is the root, red, or has no children.
-    pub(crate) fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
+    pub(crate) fn balance_after_remove(&mut self, target: NodeRef<K, V>) {
         debug_assert!(target.parent().is_some());
         debug_assert!(target.is_black());
         debug_assert!(target.left().is_none());
         debug_assert!(target.right().is_none());
 
-        while let Some(parent) = target.parent() {
-            let sibling = target.sibling();
-            let close_nephew = target.close_nephew();
-            let distant_nephew = target.distant_nephew();
+        let (idx, mut parent) = target.index_and_parent().unwrap();
+        let mut sibling = parent.child(!idx);
+        let mut close_nephew = sibling.and_then(|s| s.child(idx));
+        let mut distant_nephew = sibling.and_then(|s| s.child(!idx));
+        // Safety: `target` must be removed from the tree.
+        unsafe {
+            parent.clear_child(idx);
+        }
+
+        loop {
             if sibling.map_or(false, NodeRef::is_red) {
                 // if the sibling is red, the parent and the nephews are black:
                 //       [parent]
@@ -138,9 +144,12 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target (sibling)
                 //            /    \
                 // [close_nephew] [distant_nephew]
-                self.rotate(parent, !target.index_on_parent().unwrap());
+                self.rotate(parent, !idx);
                 parent.set_color(Color::Red);
                 sibling.unwrap().set_color(Color::Black);
+                sibling = close_nephew;
+                distant_nephew = sibling.unwrap().child(!idx);
+                close_nephew = sibling.unwrap().child(idx);
                 // then:
                 //       [sibling]
                 //        /   \
@@ -156,7 +165,7 @@ impl<K, V> RedBlackTree<K, V> {
                 // target [sibling]
                 //           \
                 //    (distant_nephew)
-                self.rotate(parent, !target.index_on_parent().unwrap());
+                self.rotate(parent, !idx);
                 sibling.unwrap().set_color(parent.color());
                 parent.set_color(Color::Black);
                 distant_nephew.unwrap().set_color(Color::Black);
@@ -175,10 +184,11 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target [sibling]
                 //             /   \
                 // (close_nephew) [distant_nephew]
-                let sibling = sibling.unwrap();
-                self.rotate(sibling, target.index_on_parent().unwrap());
-                sibling.set_color(Color::Red);
+                self.rotate(sibling.unwrap(), idx);
+                sibling.unwrap().set_color(Color::Red);
                 close_nephew.unwrap().set_color(Color::Black);
+                distant_nephew = sibling;
+                sibling = close_nephew;
                 // then:
                 //     parent
                 //      /  \
@@ -194,18 +204,19 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target [sibling]
                 //            /    \
                 // [close_nephew] [distant_nephew]
-                if let Some(sibling) = sibling {
-                    sibling.set_color(Color::Red)
-                }
+                sibling.unwrap().set_color(Color::Red);
                 parent.set_color(Color::Black);
                 break;
             }
             // if the parent and sibling and nephews are all black:
-            if let Some(sibling) = sibling {
-                sibling.set_color(Color::Red)
-            }
+            sibling.unwrap().set_color(Color::Red);
             // the parent node needs to re-balance.
-            target = parent;
+            if let Some(grandparent) = parent.parent() {
+                parent = grandparent;
+            } else {
+                // one black nodes are removed from all paths.
+                break;
+            }
         }
         self.assert_tree();
     }
