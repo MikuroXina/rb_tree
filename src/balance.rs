@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use crate::{
     node::{ChildIndex, Color, NodeRef},
     RedBlackTree,
@@ -19,31 +22,20 @@ impl<K, V> RedBlackTree<K, V> {
         let pivot = target.child(pivot_idx).expect("pivot must be found");
         let be_moved = pivot.child(!pivot_idx);
 
-        // SAFETY:
+        // SAFETY: The operations in this order is ok:
+        // 1. Set `be_moved` into `target`'s child.
+        // 2. Get parent of `target.
+        // 3. Set `pivot` into `parent`'s child, or make it root.
+        // 4. Set `target` into `pivot`'s child.
         unsafe {
+            target.set_child(pivot_idx, be_moved);
             if let Some((idx, parent)) = target.index_and_parent() {
-                // update `parent`'s child
-                parent.clear_child(idx);
                 parent.set_child(idx, pivot);
             } else {
                 self.root = pivot.make_root();
             }
-            // update `pivot`'s child
             pivot.set_child(!pivot_idx, target);
-            // update `node`'s child
-            target.set_child(pivot_idx, be_moved);
         }
-
-        if let Some((index, parent)) = pivot.index_and_parent() {
-            debug_assert_eq!(parent.child(index), Some(pivot));
-            debug_assert_eq!(pivot.parent(), Some(parent));
-        } else {
-            debug_assert_eq!(self.root, Some(pivot));
-            debug_assert!(pivot.parent().is_none());
-        }
-        debug_assert_eq!(pivot.child(!pivot_idx), Some(target));
-        debug_assert_eq!(target.parent(), Some(pivot));
-        debug_assert_eq!(target.child(pivot_idx), be_moved);
 
         pivot
     }
