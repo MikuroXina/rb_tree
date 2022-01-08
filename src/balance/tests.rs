@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    node::{ChildIndex, NodeRef},
+    node::{ChildIndex, Color, NodeRef},
     RedBlackTree,
 };
 
@@ -75,4 +75,185 @@ fn test_rotate() {
     assert_eq!(node4.children(), (Some(node2), Some(node6)));
     assert_eq!(node5.children(), (None, None));
     assert_eq!(node6.children(), (None, None));
+}
+
+#[test]
+fn test_balance_after_insert() {
+    // All cases are inserting the node `1`.
+    // Color is expressed like `[black]` or `(red)`,
+
+    {
+        // Case 1 - the parent is black:
+
+        let node1 = NodeRef::new(1, ());
+        let node3 = NodeRef::new(3, ());
+        // Safety: Nodes are connected as:
+        //   [3]
+        //   /
+        // (1)
+        unsafe {
+            node1.set_color(Color::Red);
+            node3.set_color(Color::Black);
+
+            node3.set_child(ChildIndex::Left, node1);
+        }
+        let mut tree = RedBlackTree {
+            root: Some(node3),
+            len: 2,
+            _phantom: PhantomData,
+        };
+        tree.balance_after_insert(node1);
+        // The tree must not balance for this.
+        assert_eq!(tree.root, Some(node3));
+
+        assert_eq!(node1.children(), (None, None));
+        assert_eq!(node3.children(), (Some(node1), None));
+
+        assert_eq!(node1.color(), Color::Red);
+        assert_eq!(node3.color(), Color::Black);
+    }
+    {
+        // Case 2 - the parent and uncle is red:
+        let node1 = NodeRef::new(1, ());
+        let node2 = NodeRef::new(2, ());
+        let node3 = NodeRef::new(3, ());
+        let node4 = NodeRef::new(4, ());
+        // Safety: Nodes are connected as:
+        //     [3]
+        //     / \
+        //   (2) (4)
+        //   /
+        // (1)
+        unsafe {
+            node1.set_color(Color::Red);
+            node2.set_color(Color::Red);
+            node3.set_color(Color::Black);
+            node4.set_color(Color::Red);
+
+            node3.set_child(ChildIndex::Left, node2);
+            node3.set_child(ChildIndex::Right, node4);
+            node2.set_child(ChildIndex::Left, node1);
+        }
+        let mut tree = RedBlackTree {
+            root: Some(node3),
+            len: 4,
+            _phantom: PhantomData,
+        };
+        tree.balance_after_insert(node1);
+
+        // The tree must color like:
+        //     (3)
+        //     / \
+        //   [2] [4]
+        //   /
+        // (1)
+        assert_eq!(tree.root, Some(node3));
+
+        assert_eq!(node1.children(), (None, None));
+        assert_eq!(node2.children(), (Some(node1), None));
+        assert_eq!(node3.children(), (Some(node2), Some(node4)));
+        assert_eq!(node4.children(), (None, None));
+
+        assert_eq!(node1.color(), Color::Red);
+        assert_eq!(node2.color(), Color::Black);
+        assert_eq!(node3.color(), Color::Red);
+        assert_eq!(node4.color(), Color::Black);
+    }
+    {
+        // Case 3 - the tree is empty:
+
+        let node1 = NodeRef::new(1, ());
+        // Nodes are connected as:
+        // (1)
+        node1.set_color(Color::Red);
+        let mut tree = RedBlackTree {
+            root: Some(node1),
+            len: 1,
+            _phantom: PhantomData,
+        };
+        tree.balance_after_insert(node1);
+        // The tree must not balance for this.
+        assert_eq!(tree.root, Some(node1));
+
+        assert_eq!(node1.children(), (None, None));
+
+        assert_eq!(node1.color(), Color::Red);
+    }
+    {
+        // Case 4 - the parent is root and red:
+
+        let node1 = NodeRef::new(1, ());
+        let node3 = NodeRef::new(3, ());
+        // Safety: Nodes are connected as:
+        //   (3)
+        //   /
+        // (1)
+        unsafe {
+            node1.set_color(Color::Red);
+            node3.set_color(Color::Red);
+
+            node3.set_child(ChildIndex::Left, node1);
+        }
+        let mut tree = RedBlackTree {
+            root: Some(node3),
+            len: 2,
+            _phantom: PhantomData,
+        };
+        tree.balance_after_insert(node1);
+        // The tree must color the root as black.
+        assert_eq!(tree.root, Some(node3));
+
+        assert_eq!(node1.children(), (None, None));
+        assert_eq!(node3.children(), (Some(node1), None));
+
+        assert_eq!(node1.color(), Color::Red);
+        assert_eq!(node3.color(), Color::Black);
+    }
+    {
+        // Case 5 - the parent is uncle, but the uncle is black.
+        let node0 = NodeRef::new(0, ());
+        let node1 = NodeRef::new(1, ());
+        let node3 = NodeRef::new(3, ());
+        let node4 = NodeRef::new(4, ());
+        // Safety: Nodes are connected as:
+        //   [3]
+        //   / \
+        // (0) [4]
+        //   \
+        //   (1)
+        unsafe {
+            node0.set_color(Color::Red);
+            node1.set_color(Color::Red);
+            node3.set_color(Color::Black);
+            node4.set_color(Color::Black);
+
+            node3.set_child(ChildIndex::Left, node0);
+            node3.set_child(ChildIndex::Right, node4);
+            node0.set_child(ChildIndex::Right, node1);
+        }
+        let mut tree = RedBlackTree {
+            root: Some(node3),
+            len: 4,
+            _phantom: PhantomData,
+        };
+        tree.balance_after_insert(node1);
+
+        // The tree must balance as:
+        //   [1]
+        //   / \
+        // (0) (3)
+        //       \
+        //       [4]
+        assert_eq!(tree.root, Some(node1));
+
+        assert_eq!(node0.children(), (None, None));
+        assert_eq!(node1.children(), (Some(node0), Some(node3)));
+        assert_eq!(node3.children(), (None, Some(node4)));
+        assert_eq!(node4.children(), (None, None));
+
+        assert_eq!(node0.color(), Color::Red);
+        assert_eq!(node1.color(), Color::Black);
+        assert_eq!(node3.color(), Color::Red);
+        assert_eq!(node4.color(), Color::Black);
+    }
 }
