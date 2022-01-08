@@ -251,7 +251,7 @@ impl<K, V> NodeRef<K, V> {
         self.child(ChildIndex::Right)
     }
 
-    /// Clears the child link on `idx` edge. The removed child node must be re-connected to another node with [`set_child`].
+    /// Clears the child link on `idx` edge. The removed child node must be re-connected to another node with [`set_child`] or deallocated.
     ///
     /// # Safety
     ///
