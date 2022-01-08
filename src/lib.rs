@@ -51,7 +51,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 
     fn remove_node(&mut self, mut node: NodeRef<K, V>) -> (K, V) {
-        if self.len == 0 {
+        debug_assert!(0 < self.len);
+        if self.len == 1 {
             // Safety: There is only `node` in the tree, so just deallocate it.
             unsafe { return node.deallocate() }
         }
