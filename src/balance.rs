@@ -128,16 +128,16 @@ impl<K, V> RedBlackTree<K, V> {
         debug_assert!(target.right().is_none());
 
         let (idx, mut parent) = target.index_and_parent().unwrap();
-        let mut sibling = parent.child(!idx);
-        let mut close_nephew = sibling.and_then(|s| s.child(idx));
-        let mut distant_nephew = sibling.and_then(|s| s.child(!idx));
+        let mut sibling = parent.child(!idx).unwrap();
+        let mut close_nephew = sibling.child(idx);
+        let mut distant_nephew = sibling.child(!idx);
         // Safety: `target` must be removed from the tree.
         unsafe {
             parent.clear_child(idx);
         }
 
         loop {
-            if sibling.map_or(false, NodeRef::is_red) {
+            if sibling.is_red() {
                 // if the sibling is red, the parent and the nephews are black:
                 //       [parent]
                 //        /   \
@@ -146,11 +146,10 @@ impl<K, V> RedBlackTree<K, V> {
                 // [close_nephew] [distant_nephew]
                 self.rotate(parent, !idx);
                 parent.set_color(Color::Red);
-                sibling.unwrap().set_color(Color::Black);
-                sibling = close_nephew;
-                debug_assert!(sibling.is_some());
-                distant_nephew = sibling.unwrap().child(!idx);
-                close_nephew = sibling.unwrap().child(idx);
+                sibling.set_color(Color::Black);
+                sibling = close_nephew.unwrap();
+                distant_nephew = sibling.child(!idx);
+                close_nephew = sibling.child(idx);
                 // then:
                 //       [sibling]
                 //        /   \
@@ -167,7 +166,7 @@ impl<K, V> RedBlackTree<K, V> {
                 //           \
                 //    (distant_nephew)
                 self.rotate(parent, !idx);
-                sibling.unwrap().set_color(parent.color());
+                sibling.set_color(parent.color());
                 parent.set_color(Color::Black);
                 distant_nephew.unwrap().set_color(Color::Black);
                 // then:
@@ -185,11 +184,11 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target [sibling]
                 //             /   \
                 // (close_nephew) [distant_nephew]
-                self.rotate(sibling.unwrap(), idx);
-                sibling.unwrap().set_color(Color::Red);
+                self.rotate(sibling, idx);
+                sibling.set_color(Color::Red);
                 close_nephew.unwrap().set_color(Color::Black);
-                distant_nephew = sibling;
-                sibling = close_nephew;
+                distant_nephew = Some(sibling);
+                sibling = close_nephew.unwrap();
                 // then:
                 //     parent
                 //      /  \
@@ -205,12 +204,12 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target [sibling]
                 //            /    \
                 // [close_nephew] [distant_nephew]
-                sibling.unwrap().set_color(Color::Red);
+                sibling.set_color(Color::Red);
                 parent.set_color(Color::Black);
                 break;
             }
             // if the parent and sibling and nephews are all black:
-            sibling.unwrap().set_color(Color::Red);
+            sibling.set_color(Color::Red);
             // the parent node needs to re-balance.
             if let Some(grandparent) = parent.parent() {
                 parent = grandparent;
