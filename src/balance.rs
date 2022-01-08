@@ -116,7 +116,17 @@ impl<K, V> RedBlackTree<K, V> {
         self.assert_tree();
     }
 
+    /// Balances the tree for removing `target`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `target` is the root, red, or has no children.
     pub(crate) fn balance_after_remove(&mut self, mut target: NodeRef<K, V>) {
+        debug_assert!(target.parent().is_some());
+        debug_assert!(target.is_black());
+        debug_assert!(target.left().is_none());
+        debug_assert!(target.right().is_none());
+
         while let Some(parent) = target.parent() {
             let sibling = target.sibling();
             let close_nephew = target.close_nephew();
