@@ -100,13 +100,14 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             }
         }
 
+        // `node` has on child at least.
         if let Some(child) = node.left().xor(node.right()) {
             // If `node` has one child, the color of the child must be red.
             debug_assert!(child.is_red());
         }
 
         if node.is_red() {
-            // Safety: If the node is red, it must have no children. So it can be removed.
+            // Safety: If the node is red, it has no children. So it can be removed.
             unsafe {
                 debug_assert!(node.left().is_none());
                 debug_assert!(node.right().is_none());
@@ -117,15 +118,25 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         }
 
         // `node` is black, has its parent, and has its one child at least.
-        if let Some(red_child) = node
-            .left()
-            .or_else(|| node.right())
-            .filter(|child| child.is_red())
-        {
+        if let Some(red_child) = node.left().or_else(|| node.right()) {
+            debug_assert!(red_child.is_red());
             // Safety: If `node` has red child, the child can be colored as red and replaced with `node`.
+            //    parent
+            //      |
+            //    node
+            //      |
+            // (red_child)
+            // ↓
+            //    parent
+            //      |
+            // (red_child)
+            //      |
+            //    node
             unsafe {
                 let red_child_idx = red_child.index_on_parent().unwrap();
-                node.clear_child(red_child_idx);
+                debug_assert!(node.child(!red_child_idx).is_none());
+                node.set_child(ChildIndex::Left, red_child.left());
+                node.set_child(ChildIndex::Right, red_child.right());
 
                 let (idx, parent) = node.index_and_parent().unwrap();
                 parent.set_child(idx, red_child);
