@@ -116,7 +116,7 @@ impl<K, V> RedBlackTree<K, V> {
         self.assert_tree();
     }
 
-    /// Balances the tree for removing `target`.
+    /// Balances the tree for removing `target`. Then `target` will be removed from the tree. You must deallocate `target` or it leaks the memory.
     ///
     /// # Panics
     ///
