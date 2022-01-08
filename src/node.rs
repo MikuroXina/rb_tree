@@ -69,7 +69,7 @@ impl<K, V> Eq for NodeRef<K, V> {}
 impl<K, V> NodeRef<K, V> {
     /// Constructs a new node of red-black tree with key and value. The node must be freed with [`deallocate`] after use.
     pub fn new(key: K, value: V) -> Self {
-        let ptr = Box::into_raw(
+        let leaked = Box::leak(
             Node {
                 parent: None,
                 children: (None, None),
@@ -79,7 +79,7 @@ impl<K, V> NodeRef<K, V> {
             }
             .into(),
         );
-        NodeRef(NonNull::new(ptr).unwrap())
+        NodeRef(leaked.into())
     }
 
     /// Deallocates the node and extract its key-value pair. You must not use the `NodeRef` after calling this method.
