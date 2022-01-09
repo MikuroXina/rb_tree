@@ -360,9 +360,9 @@ fn test_balance_after_remove() {
         // Balanced tree must be as:
         //   [4]
         //   / \
-        // (2) [5]
+        // [2] [5]
         //   \
-        //   [3]
+        //   (3)
         assert_eq!(tree.root, Some(node4));
 
         assert_eq!(node2.children(), (None, Some(node3)));
@@ -370,8 +370,8 @@ fn test_balance_after_remove() {
         assert_eq!(node4.children(), (Some(node2), Some(node5)));
         assert_eq!(node5.children(), (None, None));
 
-        assert!(node2.is_red());
-        assert!(node3.is_black());
+        assert!(node2.is_black());
+        assert!(node3.is_red());
         assert!(node4.is_black());
         assert!(node5.is_black());
     }
@@ -419,11 +419,11 @@ fn test_balance_after_remove() {
         //   (4)
         //   / \
         // [3] [5]
-        assert_eq!(tree.root, Some(node4));
+        assert_eq!(tree.root, Some(node2));
 
-        assert_eq!(node2.children(), (None, Some(node3)));
+        assert_eq!(node2.children(), (None, Some(node4)));
         assert_eq!(node3.children(), (None, None));
-        assert_eq!(node4.children(), (Some(node2), Some(node5)));
+        assert_eq!(node4.children(), (Some(node3), Some(node5)));
         assert_eq!(node5.children(), (None, None));
 
         assert!(node2.is_black());
