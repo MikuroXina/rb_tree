@@ -151,7 +151,6 @@ impl<K, V> RedBlackTree<K, V> {
                 //   (parent) [distant_nephew]
                 //    /    \
                 // target [close_nephew]
-                continue;
             }
             if distant_nephew.map_or(false, |n| n.is_red()) {
                 // if the sibling is black and the distant nephew is red:
