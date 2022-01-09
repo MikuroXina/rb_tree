@@ -243,10 +243,6 @@ impl<K, V> RedBlackTree<K, V> {
                 stack.push((black_count + is_black, c));
             }
         }
-        eprintln!(
-            "current black height: {}",
-            self.root.unwrap().black_height()
-        );
         assert_eq!(self.len, node_count);
     }
 }
