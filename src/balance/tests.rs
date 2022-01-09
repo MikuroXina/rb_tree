@@ -486,5 +486,27 @@ fn test_balance_after_remove() {
         assert!(node3.is_red());
         assert!(node4.is_black());
         assert!(node5.is_black());
+
+        // then try to delete node 2.
+        tree.len -= 1;
+        tree.balance_after_remove(node2);
+        // Safety: Removed node must be deallocated.
+        unsafe {
+            node2.deallocate();
+        }
+
+        // Balanced tree must be as:
+        //   (4)
+        //   / \
+        // [3] [5]
+        assert_eq!(tree.root, Some(node4));
+
+        assert_eq!(node3.children(), (None, None));
+        assert_eq!(node4.children(), (Some(node3), Some(node5)));
+        assert_eq!(node5.children(), (None, None));
+
+        assert!(node3.is_black());
+        assert!(node4.is_red());
+        assert!(node5.is_black());
     }
 }
