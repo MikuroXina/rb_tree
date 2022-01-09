@@ -136,6 +136,9 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target (sibling)
                 //            /    \
                 // [close_nephew] [distant_nephew]
+                debug_assert!(parent.is_black());
+                debug_assert!(close_nephew.map_or(true, |n| n.is_black()));
+                debug_assert!(distant_nephew.map_or(true, |n| n.is_black()));
                 self.rotate(parent, !idx);
                 parent.set_color(Color::Red);
                 sibling.set_color(Color::Black);
