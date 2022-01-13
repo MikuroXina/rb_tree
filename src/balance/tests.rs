@@ -540,22 +540,22 @@ fn simple_insert() {
     }
 
     tree.insert(2, ());
-    //   (2)
+    //   [2]
     //   / \
-    // [1] [4]
+    // (1) (4)
     {
         let node2 = tree.root.unwrap();
         assert_eq!(node2.key(), &2);
-        assert!(node2.is_red());
+        assert!(node2.is_black());
         let (node1, node4) = node2.children();
         let node1 = node1.expect("node1 must exist");
         let node4 = node4.expect("node4 must exist");
 
         assert_eq!(node1.key(), &1);
-        assert!(node1.is_black());
+        assert!(node1.is_red());
 
         assert_eq!(node4.key(), &4);
-        assert!(node4.is_black());
+        assert!(node4.is_red());
     }
 
     tree.insert(3, ());
