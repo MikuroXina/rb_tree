@@ -269,12 +269,12 @@ impl<K, V> NodeRef<K, V> {
         child.take().unwrap()
     }
 
-    /// Make a child link to `new_child` on `idx` edge.
-    ///
-    /// # Safety
-    ///
-    /// The child on `idx` must be empty before calling this.
-    pub unsafe fn set_child(mut self, idx: ChildIndex, new_child: impl Into<Option<Self>>) {
+    /// Make a child link to `new_child` on `idx` edge. And returns the old child entry.
+    pub unsafe fn set_child(
+        mut self,
+        idx: ChildIndex,
+        new_child: impl Into<Option<Self>>,
+    ) -> Option<Self> {
         let new_child = new_child.into();
         debug_assert_ne!(Some(self), new_child);
         let this = self.0.as_mut();
@@ -282,8 +282,8 @@ impl<K, V> NodeRef<K, V> {
             new_child.0.as_mut().parent = Some(self);
         }
         match idx {
-            ChildIndex::Left => this.children.0 = new_child,
-            ChildIndex::Right => this.children.1 = new_child,
+            ChildIndex::Left => std::mem::replace(&mut this.children.0, new_child),
+            ChildIndex::Right => std::mem::replace(&mut this.children.1, new_child),
         }
     }
 
