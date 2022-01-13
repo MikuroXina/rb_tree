@@ -42,7 +42,7 @@ impl<K, V> RedBlackTree<K, V> {
 
     pub(crate) fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
         loop {
-            if target.parent().is_none() || target.parent().unwrap().is_black() {
+            if target.parent().map_or(true, |p| p.is_black()) {
                 // if the parent is black or none, the tree is well balanced.
                 break;
             }
