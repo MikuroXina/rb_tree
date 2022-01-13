@@ -51,7 +51,6 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 
     fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
-        debug_assert!(0 < self.len);
         if self.len == 1 {
             // Safety: There is only `node` in the tree, so just deallocate it.
             unsafe {
@@ -120,7 +119,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             debug_assert!(red_child.is_red());
             debug_assert!(red_child.left().is_none());
             debug_assert!(red_child.right().is_none());
-            // Safety: If `node` has red child, the child can be colored as red and replaced with `node`.
+            // Safety: If `node` has red child, the child can be colored as black and replaced with `node`.
             //    parent
             //      |
             //    node
@@ -129,27 +128,21 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             // ↓
             //    parent
             //      |
-            // (red_child)
-            //      |/
-            //      / will be cut
-            //     /|
-            //    node
+            // [red_child]
             unsafe {
-                let red_child_idx = red_child.index_on_parent().unwrap();
-                node.set_child(ChildIndex::Left, None);
-                node.set_child(ChildIndex::Right, None);
-
-                let (idx, parent) = node.index_and_parent().unwrap();
-                parent.set_child(idx, red_child);
+                if let Some((idx, parent)) = node.index_and_parent() {
+                    parent.set_child(idx, red_child);
+                } else {
+                    self.root = red_child.make_root();
+                }
                 red_child.set_color(Color::Black);
-                red_child.set_child(red_child_idx, None);
             }
         } else {
             // `node` is not the root, black, and has no children.
             self.balance_after_remove(node);
         }
 
-        // Safety: `node` was remove from the tree.
+        // Safety: `node` was removed from the tree.
         unsafe { node.deallocate() }
     }
 
