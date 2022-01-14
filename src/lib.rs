@@ -16,25 +16,6 @@ pub struct RedBlackTree<K, V> {
     _phantom: PhantomData<Box<Node<K, V>>>,
 }
 
-// private methods
-impl<K, V> RedBlackTree<K, V> {
-    fn first_node(&self) -> Option<NodeRef<K, V>> {
-        let mut current = self.root?;
-        while let Some(left) = current.left() {
-            current = left;
-        }
-        Some(current)
-    }
-
-    fn last_node(&self) -> Option<NodeRef<K, V>> {
-        let mut current = self.root?;
-        while let Some(right) = current.right() {
-            current = right;
-        }
-        Some(current)
-    }
-}
-
 impl<K, V> Drop for RedBlackTree<K, V> {
     fn drop(&mut self) {
         // Safety: `self` will not be used after.

@@ -423,4 +423,20 @@ impl<K, V> NodeRef<K, V> {
         // Safety: `node` was removed from the tree.
         unsafe { self.deallocate() }
     }
+
+    pub fn first_node(self) -> Option<NodeRef<K, V>> {
+        let mut current = self;
+        while let Some(left) = current.left() {
+            current = left;
+        }
+        Some(current)
+    }
+
+    pub fn last_node(self) -> Option<NodeRef<K, V>> {
+        let mut current = self;
+        while let Some(right) = current.right() {
+            current = right;
+        }
+        Some(current)
+    }
 }

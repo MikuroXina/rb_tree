@@ -29,7 +29,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub fn drain_filter<F: FnMut(&K, &mut V) -> bool>(&mut self, f: F) -> DrainFilter<K, V, F> {
-        let current = self.first_node();
+        // FIXME: to guarantee memory safety
+        let current = self.root.and_then(|r| r.first_node());
         DrainFilter {
             tree: self,
             current,
