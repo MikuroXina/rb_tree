@@ -305,7 +305,6 @@ impl<K, V> NodeRef<K, V> {
 }
 
 impl<K: Ord, V> NodeRef<K, V> {
-    /// Searches the nearest node of `key`, or position the node to be inserted.
     pub fn search<Q>(mut self, key: &Q) -> Result<Self, (Self, ChildIndex)>
     where
         K: Borrow<Q>,
@@ -317,7 +316,113 @@ impl<K: Ord, V> NodeRef<K, V> {
                 std::cmp::Ordering::Equal => return Ok(self),
                 std::cmp::Ordering::Greater => ChildIndex::Right,
             };
-            self = self.child(idx).ok_or((self, idx))?
+            self = self.child(idx).ok_or((self, idx))?;
         }
+    }
+
+    pub fn insert_node(self, (target, idx): (Self, ChildIndex), root: &mut Option<Self>) {
+        debug_assert!(target.child(idx).is_none());
+
+        unsafe {
+            target.set_child(idx, self);
+        }
+
+        self.balance_after_insert(root);
+    }
+
+    pub fn remove_node(self, root: &mut Option<Self>) -> (K, V) {
+        if self.parent().is_none() {
+            // Safety: There is only `node` in the tree, so just deallocate it.
+            unsafe {
+                *root = None;
+                return self.deallocate();
+            }
+        }
+        // `node` is not the root, has its parent.
+        if let (Some(left), Some(right)) = self.children() {
+            // `node` is needed to replace with the maximum node in the left.
+            let mut max_in_left = left;
+            while let Some(max) = max_in_left.right() {
+                max_in_left = max;
+            }
+            let max_in_left = max_in_left;
+            // Safety: The color, parent and children of `node` is replaced with `max_in_left`. Then `node` has only one child.
+            //  parent
+            //    |
+            //   node
+            //   /  \
+            // left right
+            // /  \
+            //    ...
+            //      \
+            //   max_in_left
+            //      /
+            //    ...
+            // ↓
+            //   parent
+            //     |
+            // max_in_left
+            //    /  \
+            //  left right
+            //  /  \
+            //     ...
+            //       \
+            //      node
+            //       /
+            //     ...
+            unsafe {
+                let (idx, parent) = self.index_and_parent().unwrap();
+                let node_color = self.color();
+                self.set_child(ChildIndex::Right, None);
+                self.set_child(ChildIndex::Left, max_in_left.left());
+                self.set_color(max_in_left.color());
+                max_in_left.set_child(ChildIndex::Left, left);
+                max_in_left.set_child(ChildIndex::Right, right);
+                max_in_left.set_color(node_color);
+                parent.set_child(idx, max_in_left);
+            }
+        }
+
+        if self.is_red() {
+            // Safety: If the node is red, it has no children. So it can be removed.
+            unsafe {
+                debug_assert!(self.left().is_none());
+                debug_assert!(self.right().is_none());
+                let (idx, parent) = self.index_and_parent().unwrap();
+                parent.clear_child(idx);
+                return self.deallocate();
+            }
+        }
+
+        // `node` is black, has its parent, and has its one child at least.
+        if let Some(red_child) = self.left().or_else(|| self.right()) {
+            debug_assert!(red_child.is_red());
+            debug_assert!(red_child.left().is_none());
+            debug_assert!(red_child.right().is_none());
+            // Safety: If `node` has red child, the child can be colored as black and replaced with `node`.
+            //    parent
+            //      |
+            //    node
+            //      |
+            // (red_child)
+            // ↓
+            //    parent
+            //      |
+            // [red_child]
+            unsafe {
+                if let Some((idx, parent)) = self.index_and_parent() {
+                    parent.set_child(idx, red_child);
+                } else {
+                    *root = red_child.make_root();
+                }
+                red_child.set_color(Color::Black);
+            }
+        } else {
+            // `node` is not the root, black, and has no children.
+            self.balance_after_remove(root);
+        }
+
+        // Safety: `node` was removed from the tree.
+        unsafe { self.deallocate() }
     }
 }

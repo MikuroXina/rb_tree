@@ -1,13 +1,10 @@
 #[cfg(test)]
 mod tests;
 
-use crate::{
-    node::{ChildIndex, Color, NodeRef},
-    RedBlackTree,
-};
+use crate::node::{ChildIndex, Color, NodeRef};
 
-impl<K, V> RedBlackTree<K, V> {
-    pub(crate) fn rotate(&mut self, target: NodeRef<K, V>, pivot_idx: ChildIndex) -> NodeRef<K, V> {
+impl<K, V> NodeRef<K, V> {
+    pub(crate) fn rotate(self, pivot_idx: ChildIndex, root: &mut Option<Self>) -> NodeRef<K, V> {
         //           [target]
         //            /   \
         //        [pivot] [be_fallen]
@@ -19,7 +16,7 @@ impl<K, V> RedBlackTree<K, V> {
         // [be_risen] [target]
         //             /   \
         //     [be_moved] [be_fallen]
-        let pivot = target.child(pivot_idx).expect("pivot must be found");
+        let pivot = self.child(pivot_idx).expect("pivot must be found");
         let be_moved = pivot.child(!pivot_idx);
 
         // SAFETY: The operations in this order is ok:
@@ -28,58 +25,58 @@ impl<K, V> RedBlackTree<K, V> {
         // 3. Set `pivot` into `parent`'s child, or make it root.
         // 4. Set `target` into `pivot`'s child.
         unsafe {
-            target.set_child(pivot_idx, be_moved);
-            if let Some((idx, parent)) = target.index_and_parent() {
+            self.set_child(pivot_idx, be_moved);
+            if let Some((idx, parent)) = self.index_and_parent() {
                 parent.set_child(idx, pivot);
             } else {
-                self.root = pivot.make_root();
+                *root = pivot.make_root();
             }
-            pivot.set_child(!pivot_idx, target);
+            pivot.set_child(!pivot_idx, self);
         }
 
         pivot
     }
 
-    pub(crate) fn balance_after_insert(&mut self, mut target: NodeRef<K, V>) {
+    pub(crate) fn balance_after_insert(mut self, root: &mut Option<Self>) {
         loop {
-            if target.parent().map_or(true, |p| p.is_black()) {
+            if self.parent().map_or(true, |p| p.is_black()) {
                 // if the parent is black or none, the tree is well balanced.
                 break;
             }
             // the parent is red
-            if target.grandparent().is_none() {
+            if self.grandparent().is_none() {
                 // if the parent is red and no grandparent exists, the root parent will be black.
-                target.parent().unwrap().set_color(Color::Black);
+                self.parent().unwrap().set_color(Color::Black);
                 break;
             }
             // the parent is red and the grandparent exists
-            if target.uncle().map_or(false, |uncle| uncle.is_red()) {
+            if self.uncle().map_or(false, |uncle| uncle.is_red()) {
                 // if the parent and the uncle is red, they will be black and the grandparent will be red.
-                target.parent().unwrap().set_color(Color::Black);
-                target.uncle().unwrap().set_color(Color::Black);
-                let grandparent = target.grandparent().unwrap();
+                self.parent().unwrap().set_color(Color::Black);
+                self.uncle().unwrap().set_color(Color::Black);
+                let grandparent = self.grandparent().unwrap();
                 grandparent.set_color(Color::Red);
                 // then nodes above the grandparent needs to re-balance.
-                target = grandparent;
+                self = grandparent;
                 continue;
             }
             // the parent is red and the uncle is black
-            if target.parent().unwrap().index_on_parent() != target.index_on_parent() {
-                let parent = target.parent().unwrap();
+            if self.parent().unwrap().index_on_parent() != self.index_on_parent() {
+                let parent = self.parent().unwrap();
                 // if the nodes are connected:
                 //   [grandparent]  |  [grandparent]
                 //     /     \      |     /     \
                 // (parent) [uncle] | [uncle] (parent)
                 //      \           |           /
                 //     (target)     |      (target)
-                self.rotate(parent, target.index_on_parent().unwrap());
+                parent.rotate(self.index_on_parent().unwrap(), root);
                 // then rotated:
                 //   [grandparent]  |  [grandparent]
                 //     /     \      |     /     \
                 // (target) [uncle] | [uncle] (target)
                 //   /              |             \
                 // (parent)         |          (parent)
-                target = parent;
+                self = parent;
             }
             // the nodes are connected:
             //   [grandparent]  |  [grandparent]
@@ -87,8 +84,8 @@ impl<K, V> RedBlackTree<K, V> {
             // (parent) [uncle] | [uncle] (parent)
             //   /              |             \
             // (target)         |          (target)
-            target.parent().unwrap().set_color(Color::Black);
-            let grandparent = target.grandparent().unwrap();
+            self.parent().unwrap().set_color(Color::Black);
+            let grandparent = self.grandparent().unwrap();
             grandparent.set_color(Color::Red);
             // then colored:
             //   (grandparent)  |  (grandparent)
@@ -96,7 +93,7 @@ impl<K, V> RedBlackTree<K, V> {
             // [parent] [uncle] | [uncle] [parent]
             //   /              |             \
             // (target)         |          (target)
-            self.rotate(grandparent, target.index_on_parent().unwrap());
+            grandparent.rotate(self.index_on_parent().unwrap(), root);
             // finished:
             //   [parent]             |          [parent]
             //    /    \              |           /    \
@@ -105,7 +102,7 @@ impl<K, V> RedBlackTree<K, V> {
             //          [uncle]       |   [uncle]
             break;
         }
-        self.assert_tree();
+        self.assert_tree(root);
     }
 
     /// Balances the tree for removing `target`. Then `target` will be removed from the tree. You must deallocate `target` or it leaks the memory.
@@ -113,13 +110,13 @@ impl<K, V> RedBlackTree<K, V> {
     /// # Panics
     ///
     /// Panics if `target` is the root, red, or has no children.
-    pub(crate) fn balance_after_remove(&mut self, target: NodeRef<K, V>) {
-        debug_assert!(target.parent().is_some());
-        debug_assert!(target.is_black());
-        debug_assert!(target.left().is_none());
-        debug_assert!(target.right().is_none());
+    pub(crate) fn balance_after_remove(self, root: &mut Option<Self>) {
+        debug_assert!(self.parent().is_some());
+        debug_assert!(self.is_black());
+        debug_assert!(self.left().is_none());
+        debug_assert!(self.right().is_none());
 
-        let (idx, mut parent) = target.index_and_parent().unwrap();
+        let (idx, mut parent) = self.index_and_parent().unwrap();
         let mut sibling = parent.child(!idx).unwrap();
         let mut close_nephew = sibling.child(idx);
         let mut distant_nephew = sibling.child(!idx);
@@ -139,7 +136,7 @@ impl<K, V> RedBlackTree<K, V> {
                 debug_assert!(parent.is_black());
                 debug_assert!(close_nephew.map_or(true, |n| n.is_black()));
                 debug_assert!(distant_nephew.map_or(true, |n| n.is_black()));
-                self.rotate(parent, !idx);
+                parent.rotate(!idx, root);
                 parent.set_color(Color::Red);
                 sibling.set_color(Color::Black);
                 sibling = close_nephew.unwrap();
@@ -159,7 +156,7 @@ impl<K, V> RedBlackTree<K, V> {
                 // target [sibling]
                 //           \
                 //    (distant_nephew)
-                self.rotate(parent, !idx);
+                parent.rotate(!idx, root);
                 sibling.set_color(parent.color());
                 parent.set_color(Color::Black);
                 distant_nephew.unwrap().set_color(Color::Black);
@@ -178,7 +175,7 @@ impl<K, V> RedBlackTree<K, V> {
                 //    target [sibling]
                 //             /   \
                 // (close_nephew) [distant_nephew]
-                self.rotate(sibling, idx);
+                sibling.rotate(idx, root);
                 sibling.set_color(Color::Red);
                 close_nephew.unwrap().set_color(Color::Black);
                 distant_nephew = Some(sibling);
@@ -212,22 +209,20 @@ impl<K, V> RedBlackTree<K, V> {
                 break;
             }
         }
-        self.assert_tree();
+        self.assert_tree(root);
     }
 
     #[cfg(not(test))]
     #[inline]
-    fn assert_tree(&self) {}
+    fn assert_tree(self, _: &Option<Self>) {}
 
     #[cfg(test)]
-    fn assert_tree(&self) {
-        if self.root.is_none() {
+    fn assert_tree(self, root: &Option<Self>) {
+        if root.is_none() {
             return;
         }
-        let mut stack = vec![(0usize, self.root.unwrap())];
-        let mut node_count = 0;
+        let mut stack = vec![(0usize, root.unwrap())];
         while let Some((black_count, node)) = stack.pop() {
-            node_count += 1;
             if node.is_red() {
                 assert!(node.left().map_or(true, |n| n.is_black()));
                 assert!(node.right().map_or(true, |n| n.is_black()));
@@ -245,6 +240,5 @@ impl<K, V> RedBlackTree<K, V> {
                 stack.push((black_count + is_black, c));
             }
         }
-        assert_eq!(self.len, node_count);
     }
 }

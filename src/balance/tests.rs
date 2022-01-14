@@ -34,7 +34,7 @@ fn test_rotate() {
         _phantom: PhantomData,
     };
 
-    tree.rotate(node3, ChildIndex::Right);
+    node3.rotate(ChildIndex::Right, &mut tree.root);
 
     // Rotated tree must be as:
     //       node4
@@ -55,7 +55,7 @@ fn test_rotate() {
     assert_eq!(node5.children(), (None, None));
     assert_eq!(node6.children(), (None, None));
 
-    tree.rotate(node3, ChildIndex::Left);
+    node3.rotate(ChildIndex::Left, &mut tree.root);
 
     // Rotated tree must be as:
     //       node4
@@ -102,7 +102,7 @@ fn test_balance_after_insert() {
             len: 2,
             _phantom: PhantomData,
         };
-        tree.balance_after_insert(node1);
+        node1.balance_after_insert(&mut tree.root);
         // The tree must not balance for this.
         assert_eq!(tree.root, Some(node3));
 
@@ -139,7 +139,7 @@ fn test_balance_after_insert() {
             len: 4,
             _phantom: PhantomData,
         };
-        tree.balance_after_insert(node1);
+        node1.balance_after_insert(&mut tree.root);
 
         // The tree must color like:
         //     (3)
@@ -171,7 +171,7 @@ fn test_balance_after_insert() {
             len: 1,
             _phantom: PhantomData,
         };
-        tree.balance_after_insert(node1);
+        node1.balance_after_insert(&mut tree.root);
         // The tree must not balance for this.
         assert_eq!(tree.root, Some(node1));
 
@@ -199,7 +199,7 @@ fn test_balance_after_insert() {
             len: 2,
             _phantom: PhantomData,
         };
-        tree.balance_after_insert(node1);
+        node1.balance_after_insert(&mut tree.root);
         // The tree must color the root as black.
         assert_eq!(tree.root, Some(node3));
 
@@ -236,7 +236,7 @@ fn test_balance_after_insert() {
             len: 4,
             _phantom: PhantomData,
         };
-        tree.balance_after_insert(node1);
+        node1.balance_after_insert(&mut tree.root);
 
         // The tree must balance as:
         //   [1]
@@ -295,7 +295,7 @@ fn test_balance_after_remove() {
             _phantom: PhantomData,
         };
 
-        tree.balance_after_remove(node1);
+        node1.balance_after_remove(&mut tree.root);
         // Safety: Removed node must be deallocated.
         unsafe {
             node1.deallocate();
@@ -351,7 +351,7 @@ fn test_balance_after_remove() {
             _phantom: PhantomData,
         };
 
-        tree.balance_after_remove(node1);
+        node1.balance_after_remove(&mut tree.root);
         // Safety: Removed node must be deallocated.
         unsafe {
             node1.deallocate();
@@ -407,7 +407,7 @@ fn test_balance_after_remove() {
             _phantom: PhantomData,
         };
 
-        tree.balance_after_remove(node1);
+        node1.balance_after_remove(&mut tree.root);
         // Safety: Removed node must be deallocated.
         unsafe {
             node1.deallocate();
@@ -463,7 +463,7 @@ fn test_balance_after_remove() {
             _phantom: PhantomData,
         };
 
-        tree.balance_after_remove(node1);
+        node1.balance_after_remove(&mut tree.root);
         // Safety: Removed node must be deallocated.
         unsafe {
             node1.deallocate();
@@ -489,7 +489,7 @@ fn test_balance_after_remove() {
 
         // then try to delete node 2.
         tree.len -= 1;
-        tree.balance_after_remove(node2);
+        node2.balance_after_remove(&mut tree.root);
         // Safety: Removed node must be deallocated.
         unsafe {
             node2.deallocate();

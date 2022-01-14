@@ -1,5 +1,3 @@
-#![deny(clippy::undocumented_unsafe_blocks)]
-
 mod balance;
 pub mod entry;
 pub mod iter;
@@ -8,11 +6,9 @@ mod node;
 #[cfg(test)]
 mod tests;
 
-use node::{ChildIndex, Node, NodeRef};
+use node::{Node, NodeRef};
 
 use std::{borrow::Borrow, fmt, hash, marker::PhantomData, ops};
-
-use crate::node::Color;
 
 pub struct RedBlackTree<K, V> {
     root: Option<NodeRef<K, V>>,
@@ -36,122 +32,6 @@ impl<K, V> RedBlackTree<K, V> {
             current = right;
         }
         Some(current)
-    }
-}
-
-// private methods
-impl<K: Ord, V> RedBlackTree<K, V> {
-    fn insert_node(&mut self, new_node: NodeRef<K, V>, (target, idx): (NodeRef<K, V>, ChildIndex)) {
-        debug_assert!(target.child(idx).is_none());
-
-        // Safety: the child entry of the target is empty.
-        unsafe { target.set_child(idx, new_node) };
-
-        self.balance_after_insert(new_node);
-    }
-
-    fn remove_node(&mut self, node: NodeRef<K, V>) -> (K, V) {
-        if self.len == 1 {
-            // Safety: There is only `node` in the tree, so just deallocate it.
-            unsafe {
-                self.root = None;
-                return node.deallocate();
-            }
-        }
-        // `node` is not the root, has its parent.
-        if let (Some(left), Some(right)) = node.children() {
-            // `node` is needed to replace with the maximum node in the left.
-            let mut max_in_left = left;
-            while let Some(max) = max_in_left.right() {
-                max_in_left = max;
-            }
-            let max_in_left = max_in_left;
-            // Safety: The color, parent and children of `node` is replaced with `max_in_left`. Then `node` has only one child.
-            //  parent
-            //    |
-            //   node
-            //   /  \
-            // left right
-            // /  \
-            //    ...
-            //      \
-            //   max_in_left
-            //      /
-            //    ...
-            // ↓
-            //   parent
-            //     |
-            // max_in_left
-            //    /  \
-            //  left right
-            //  /  \
-            //     ...
-            //       \
-            //      node
-            //       /
-            //     ...
-            unsafe {
-                let (idx, parent) = node.index_and_parent().unwrap();
-                let node_color = node.color();
-                node.set_child(ChildIndex::Right, None);
-                node.set_child(ChildIndex::Left, max_in_left.left());
-                node.set_color(max_in_left.color());
-                max_in_left.set_child(ChildIndex::Left, left);
-                max_in_left.set_child(ChildIndex::Right, right);
-                max_in_left.set_color(node_color);
-                parent.set_child(idx, max_in_left);
-            }
-        }
-
-        if node.is_red() {
-            // Safety: If the node is red, it has no children. So it can be removed.
-            unsafe {
-                debug_assert!(node.left().is_none());
-                debug_assert!(node.right().is_none());
-                let (idx, parent) = node.index_and_parent().unwrap();
-                parent.clear_child(idx);
-                return node.deallocate();
-            }
-        }
-
-        // `node` is black, has its parent, and has its one child at least.
-        if let Some(red_child) = node.left().or_else(|| node.right()) {
-            debug_assert!(red_child.is_red());
-            debug_assert!(red_child.left().is_none());
-            debug_assert!(red_child.right().is_none());
-            // Safety: If `node` has red child, the child can be colored as black and replaced with `node`.
-            //    parent
-            //      |
-            //    node
-            //      |
-            // (red_child)
-            // ↓
-            //    parent
-            //      |
-            // [red_child]
-            unsafe {
-                if let Some((idx, parent)) = node.index_and_parent() {
-                    parent.set_child(idx, red_child);
-                } else {
-                    self.root = red_child.make_root();
-                }
-                red_child.set_color(Color::Black);
-            }
-        } else {
-            // `node` is not the root, black, and has no children.
-            self.balance_after_remove(node);
-        }
-
-        // Safety: `node` was removed from the tree.
-        unsafe { node.deallocate() }
-    }
-
-    fn search_node<Q>(&self, key: &Q) -> Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>
-    where
-        K: Borrow<Q>,
-        Q: Ord + ?Sized,
-    {
-        self.root.unwrap().search(key)
     }
 }
 
@@ -391,9 +271,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             self.root = Some(NodeRef::new(key, value));
             return None;
         }
-        match self.search_node(&key) {
+        match self.root.unwrap().search(&key) {
             Ok(found) => {
-                // replace
+                // only replace the value
                 // Safety: The mutable reference is temporary.
                 let old_v = std::mem::replace(unsafe { found.value_mut() }, value);
                 Some((key, old_v))
@@ -401,7 +281,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             Err(target) => {
                 let new_node = NodeRef::new(key, value);
                 self.len += 1;
-                self.insert_node(new_node, target);
+                new_node.insert_node(target, &mut self.root);
                 None
             }
         }
@@ -442,12 +322,9 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        if self.is_empty() {
-            return None;
-        }
-        let found = self.search_node(key).ok()?;
+        let found = self.root?.search(key).ok()?;
         self.len -= 1;
-        let ret = self.remove_node(found);
+        let ret = found.remove_node(&mut self.root);
         Some(ret)
     }
 
@@ -492,11 +369,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        if self.is_empty() {
-            return None;
-        }
-        // Safety: The mutable reference will not live longer than `&mut self`.
-        self.search_node(key).ok().map(|n| unsafe { n.value_mut() })
+        self.root?
+            .search(key)
+            .ok()
+            .map(|n| unsafe { n.value_mut() })
     }
 
     /// Returns the key-value pair corresponding to the supplied key.
@@ -517,11 +393,10 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        if self.is_empty() {
-            return None;
-        }
-        // Safety: The reference of key-value pair will not live longer than `&self`.
-        self.search_node(key).ok().map(|n| unsafe { n.key_value() })
+        self.root?
+            .search(key)
+            .ok()
+            .map(|n| unsafe { n.key_value() })
     }
 
     /// Returns whether the map contains a value for the specified key.

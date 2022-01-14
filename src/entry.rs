@@ -56,10 +56,11 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
             if self.tree.root.is_none() {
                 let root = NodeRef::new(self.key, default);
                 self.tree.root = Some(root);
+                self.tree.len += 1;
                 root.value_mut()
-            } else if let Err(target) = self.tree.search_node(&self.key) {
+            } else if let Err(target) = self.tree.root.unwrap().search(&self.key) {
                 let node = NodeRef::new(self.key, default);
-                self.tree.insert_node(node, target);
+                node.insert_node(target, &mut self.tree.root);
                 node.value_mut()
             } else {
                 self.tree.get_mut(&self.key).unwrap()
@@ -107,10 +108,10 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
                 let root = NodeRef::new(self.key, default);
                 self.tree.root = Some(root);
                 root.value_mut()
-            } else if let Err(target) = self.tree.search_node(&self.key) {
+            } else if let Err(target) = self.tree.root.unwrap().search(&self.key) {
                 let default = default(&self.key);
                 let node = NodeRef::new(self.key, default);
-                self.tree.insert_node(node, target);
+                node.insert_node(target, &mut self.tree.root);
                 node.value_mut()
             } else {
                 self.tree.get_mut(&self.key).unwrap()
