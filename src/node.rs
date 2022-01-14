@@ -302,12 +302,10 @@ impl<K, V> NodeRef<K, V> {
     pub fn index_and_parent(self) -> Option<(ChildIndex, Self)> {
         self.index_on_parent().zip(self.parent())
     }
-}
 
-impl<K: Ord, V> NodeRef<K, V> {
     pub fn search<Q>(mut self, key: &Q) -> Result<Self, (Self, ChildIndex)>
     where
-        K: Borrow<Q>,
+        K: Ord + Borrow<Q>,
         Q: Ord + ?Sized,
     {
         loop {
