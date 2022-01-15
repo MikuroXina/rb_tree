@@ -158,6 +158,50 @@ impl<T> RbTreeSet<T> {
         self.map.insert(value, ()).map(|(k, _)| k)
     }
 
+    /// Removes a value from the set. Returns whether the value was present in the set.
+    ///
+    /// The value may be any borrowed form of the set’s value type, but the ordering on the borrowed form must match the ordering on the value type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set = RbTreeSet::new();
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.remove(&2), true);
+    /// assert_eq!(set.remove(&2), false);
+    /// ```
+    pub fn remove<Q>(&mut self, value: &Q) -> bool
+    where
+        T: Ord + Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.map.remove(value).is_some()
+    }
+
+    /// Removes and returns the value in the set, if any, that is equal to the given one.
+    ///
+    /// The value may be any borrowed form of the set’s value type, but the ordering on the borrowed form must match the ordering on the value type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set: RbTreeSet<_> = [1, 2, 3].iter().cloned().collect();
+    /// assert_eq!(set.take(&2), Some(2));
+    /// assert_eq!(set.take(&2), None);
+    /// ```
+    pub fn take<Q>(&mut self, value: &Q) -> Option<T>
+    where
+        T: Ord + Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.map.remove_entry(value).map(|(k, _)| k)
+    }
+
     /// Clears the set, removing all values.
     ///
     /// # Examples
