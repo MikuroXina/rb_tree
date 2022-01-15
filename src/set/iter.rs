@@ -231,6 +231,31 @@ impl<T> RbTreeSet<T> {
         };
         Intersection(inner)
     }
+
+    /// Visits the values representing the union,
+    /// i.e., all the values in `self` or `other`, without duplicates,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut a = RbTreeSet::new();
+    /// a.insert(1);
+    ///
+    /// let mut b = RbTreeSet::new();
+    /// b.insert(2);
+    ///
+    /// let union: Vec<_> = a.union(&b).cloned().collect();
+    /// assert_eq!(union, [1, 2]);
+    /// ```
+    pub fn union<'a>(&'a self, other: &'a Self) -> Union<'a, T>
+    where
+        T: Ord,
+    {
+        Union(MergeIter::new(self.iter(), other.iter()))
+    }
 }
 
 #[derive(Debug)]
@@ -495,3 +520,32 @@ impl<'a, T: Ord + 'a> Iterator for Intersection<'a, T> {
 }
 
 impl<T: Ord> FusedIterator for Intersection<'_, T> {}
+
+#[derive(Debug)]
+pub struct Union<'a, T>(MergeIter<Iter<'a, T>>);
+
+impl<T> Clone for Union<'_, T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<'a, T: Ord + 'a> Iterator for Union<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let (a_next, b_next) = self.0.nexts(Self::Item::cmp);
+        a_next.or(b_next)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let lens = self.0.lens();
+        (lens.0.max(lens.1), Some(lens.0 + lens.1))
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+}
+
+impl<T: Ord> FusedIterator for Union<'_, T> {}
