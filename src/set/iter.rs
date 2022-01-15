@@ -1,3 +1,7 @@
+mod merge;
+
+use self::merge::MergeIter;
+
 use super::RbTreeSet;
 
 use std::{
@@ -132,6 +136,31 @@ impl<T> RbTreeSet<T> {
             },
         };
         Difference(inner)
+    }
+
+    /// Visits the values representing the symmetric difference, i.e., the values that are in `self` or in `other` but not in both, in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut a = RbTreeSet::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    ///
+    /// let mut b = RbTreeSet::new();
+    /// b.insert(2);
+    /// b.insert(3);
+    ///
+    /// let sym_diff: Vec<_> = a.symmetric_difference(&b).cloned().collect();
+    /// assert_eq!(sym_diff, [1, 3]);
+    /// ```
+    pub fn symmetric_difference<'a>(&'a self, other: &'a Self) -> SymmetricDifference<'a, T>
+    where
+        T: Ord,
+    {
+        SymmetricDifference(MergeIter::new(self.iter(), other.iter()))
     }
 }
 
@@ -276,13 +305,42 @@ impl<'a, T: Ord + 'a> Iterator for Difference<'a, T> {
         (self_len.saturating_sub(other_len), Some(self_len))
     }
 
-    fn min(mut self) -> Option<Self::Item>
-    where
-        Self: Sized,
-        Self::Item: Ord,
-    {
+    fn min(mut self) -> Option<Self::Item> {
         self.next()
     }
 }
 
 impl<'a, T: Ord + 'a> FusedIterator for Difference<'a, T> {}
+
+#[derive(Debug)]
+pub struct SymmetricDifference<'a, T>(MergeIter<Iter<'a, T>>);
+
+impl<T> Clone for SymmetricDifference<'_, T> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl<'a, T: Ord + 'a> Iterator for SymmetricDifference<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (a_next, b_next) = self.0.nexts(Self::Item::cmp);
+            if a_next.and(b_next).is_none() {
+                return a_next.or(b_next);
+            }
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let lens = self.0.lens();
+        (0, Some(lens.0 + lens.1))
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+}
+
+impl<T: Ord> FusedIterator for SymmetricDifference<'_, T> {}
