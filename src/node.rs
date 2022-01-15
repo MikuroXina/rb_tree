@@ -153,7 +153,7 @@ impl<K, V> Root<K, V> {
             let redundant = max_in_left.left();
             //  parent
             //    |
-            //   to_remove
+            // to_remove
             //   /  \
             // left right
             // /  \
@@ -161,7 +161,7 @@ impl<K, V> Root<K, V> {
             //      \
             //   max_in_left
             //      /
-            //    ...
+            // redundant
             // ↓
             //   parent
             //     |
@@ -171,10 +171,12 @@ impl<K, V> Root<K, V> {
             //  /  \
             //     ...
             //       \
-            //      to_remove
-            //       /
-            //     ...
+            //     redundant
             unsafe {
+                let to_remove_color = to_remove.color();
+                to_remove.set_color(max_in_left.color());
+                max_in_left.set_color(to_remove_color);
+
                 let (idx, parent) = max_in_left.index_and_parent().unwrap();
                 parent.set_child(idx, redundant);
                 if let Some((idx, parent)) = to_remove.index_and_parent() {
@@ -182,8 +184,12 @@ impl<K, V> Root<K, V> {
                 } else {
                     self.root = Some(max_in_left);
                 }
-                max_in_left.set_child(ChildIndex::Left, left);
+                if max_in_left != left {
+                    max_in_left.set_child(ChildIndex::Left, left);
+                }
                 max_in_left.set_child(ChildIndex::Right, right);
+
+                return Some(to_remove.deallocate());
             }
         }
 
