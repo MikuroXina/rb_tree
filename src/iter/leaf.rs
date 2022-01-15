@@ -3,7 +3,7 @@ use std::{borrow, ops};
 use super::PreviousStep;
 use crate::{
     node::{ChildIndex, NodeRef},
-    RedBlackTree,
+    RbTreeMap,
 };
 
 pub struct DyingLeafRange<K, V> {
@@ -14,7 +14,7 @@ pub struct DyingLeafRange<K, V> {
 }
 
 impl<K, V> DyingLeafRange<K, V> {
-    pub fn new(tree: RedBlackTree<K, V>) -> Self {
+    pub fn new(tree: RbTreeMap<K, V>) -> Self {
         let start = tree.root.inner().map(|r| r.min_child());
         let end = tree.root.inner().map(|r| r.max_child());
         std::mem::forget(tree);
@@ -127,7 +127,7 @@ impl<K, V> Clone for RefLeafRange<K, V> {
 }
 
 impl<K, V> RefLeafRange<K, V> {
-    pub fn new<R, Q>(tree: &RedBlackTree<K, V>, range: R) -> Self
+    pub fn new<R, Q>(tree: &RbTreeMap<K, V>, range: R) -> Self
     where
         K: Ord + borrow::Borrow<Q>,
         Q: Ord + ?Sized,

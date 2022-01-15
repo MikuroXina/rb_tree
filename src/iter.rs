@@ -12,7 +12,7 @@ pub use values::*;
 
 use std::iter::FusedIterator;
 
-use crate::RedBlackTree;
+use crate::RbTreeMap;
 
 #[derive(Debug, Clone, Copy)]
 enum PreviousStep {
@@ -36,7 +36,7 @@ pub struct IntoIter<K, V> {
     length: usize,
 }
 
-impl<K: Ord, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RbTreeMap<K, V> {
     /// Gets an iterator over the entries of the map, sorted by key.
     ///
     /// # Examples
@@ -88,7 +88,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     }
 }
 
-impl<K, V> IntoIterator for RedBlackTree<K, V> {
+impl<K, V> IntoIterator for RbTreeMap<K, V> {
     type Item = (K, V);
 
     type IntoIter = IntoIter<K, V>;
@@ -153,7 +153,7 @@ impl<K, V> ExactSizeIterator for IntoIter<K, V> {
 
 impl<K, V> FusedIterator for IntoIter<K, V> {}
 
-impl<'a, K: Ord, V> IntoIterator for &'a RedBlackTree<K, V> {
+impl<'a, K: Ord, V> IntoIterator for &'a RbTreeMap<K, V> {
     type Item = (&'a K, &'a V);
 
     type IntoIter = Range<'a, K, V>;
@@ -163,7 +163,7 @@ impl<'a, K: Ord, V> IntoIterator for &'a RedBlackTree<K, V> {
     }
 }
 
-impl<'a, K: Ord, V> IntoIterator for &'a mut RedBlackTree<K, V> {
+impl<'a, K: Ord, V> IntoIterator for &'a mut RbTreeMap<K, V> {
     type Item = (&'a K, &'a mut V);
 
     type IntoIter = RangeMut<'a, K, V>;

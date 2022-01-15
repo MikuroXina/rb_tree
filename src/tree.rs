@@ -2,30 +2,30 @@ use crate::node::Root;
 
 use std::{borrow::Borrow, fmt, hash, ops};
 
-pub struct RedBlackTree<K, V> {
+pub struct RbTreeMap<K, V> {
     pub(crate) root: Root<K, V>,
 }
 
-impl<K, V> Drop for RedBlackTree<K, V> {
+impl<K, V> Drop for RbTreeMap<K, V> {
     fn drop(&mut self) {
         // Safety: `self` will not be used after.
         unsafe { drop(std::ptr::read(self).into_iter()) }
     }
 }
 
-impl<K: fmt::Debug + Ord, V: fmt::Debug> fmt::Debug for RedBlackTree<K, V> {
+impl<K: fmt::Debug + Ord, V: fmt::Debug> fmt::Debug for RbTreeMap<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_map().entries(self.iter()).finish()
     }
 }
 
-impl<K, V> Default for RedBlackTree<K, V> {
+impl<K, V> Default for RbTreeMap<K, V> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K: Ord, V> FromIterator<(K, V)> for RedBlackTree<K, V> {
+impl<K: Ord, V> FromIterator<(K, V)> for RbTreeMap<K, V> {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let mut tree = Self::new();
         for (k, v) in iter {
@@ -35,7 +35,7 @@ impl<K: Ord, V> FromIterator<(K, V)> for RedBlackTree<K, V> {
     }
 }
 
-impl<K: Ord, V> Extend<(K, V)> for RedBlackTree<K, V> {
+impl<K: Ord, V> Extend<(K, V)> for RbTreeMap<K, V> {
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         for (k, v) in iter {
             self.insert(k, v);
@@ -43,7 +43,7 @@ impl<K: Ord, V> Extend<(K, V)> for RedBlackTree<K, V> {
     }
 }
 
-impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RedBlackTree<K, V> {
+impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RbTreeMap<K, V> {
     fn extend<T: IntoIterator<Item = (&'a K, &'a V)>>(&mut self, iter: T) {
         for (k, v) in iter {
             self.insert(*k, *v);
@@ -51,14 +51,14 @@ impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RedBlackTr
     }
 }
 
-impl<K: hash::Hash + Ord, V: hash::Hash> hash::Hash for RedBlackTree<K, V> {
+impl<K: hash::Hash + Ord, V: hash::Hash> hash::Hash for RbTreeMap<K, V> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.root.len().hash(state);
         self.iter().for_each(|e| e.hash(state));
     }
 }
 
-impl<K, Q, V> ops::Index<&'_ Q> for RedBlackTree<K, V>
+impl<K, Q, V> ops::Index<&'_ Q> for RbTreeMap<K, V>
 where
     K: Borrow<Q> + Ord,
     Q: Ord + ?Sized,
@@ -70,7 +70,7 @@ where
     }
 }
 
-impl<K, Q, V> ops::IndexMut<&'_ Q> for RedBlackTree<K, V>
+impl<K, Q, V> ops::IndexMut<&'_ Q> for RbTreeMap<K, V>
 where
     K: Borrow<Q> + Ord,
     Q: Ord + ?Sized,
@@ -80,27 +80,27 @@ where
     }
 }
 
-impl<K: Ord, V: PartialEq> PartialEq for RedBlackTree<K, V> {
+impl<K: Ord, V: PartialEq> PartialEq for RbTreeMap<K, V> {
     fn eq(&self, other: &Self) -> bool {
         self.root.len() == other.root.len() && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 
-impl<K: Ord, V: Eq> Eq for RedBlackTree<K, V> {}
+impl<K: Ord, V: Eq> Eq for RbTreeMap<K, V> {}
 
-impl<K: Ord, V: PartialOrd> PartialOrd for RedBlackTree<K, V> {
+impl<K: Ord, V: PartialOrd> PartialOrd for RbTreeMap<K, V> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.iter().partial_cmp(other.iter())
     }
 }
 
-impl<K: Ord, V: Ord> Ord for RedBlackTree<K, V> {
+impl<K: Ord, V: Ord> Ord for RbTreeMap<K, V> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.iter().cmp(other.iter())
     }
 }
 
-impl<K, V> RedBlackTree<K, V> {
+impl<K, V> RbTreeMap<K, V> {
     /// Creates an empty `RedBlackTree`.
     ///
     /// # Examples
@@ -169,7 +169,7 @@ impl<K, V> RedBlackTree<K, V> {
     }
 }
 
-impl<K: Ord, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RbTreeMap<K, V> {
     /// Moves all elements from `other` into `Self`, leaving `other` empty.
     ///
     /// # Examples

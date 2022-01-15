@@ -1,10 +1,10 @@
 use std::iter::FusedIterator;
 
-use crate::RedBlackTree;
+use crate::RbTreeMap;
 
 use super::{IntoIter, Range};
 
-impl<K: Ord, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RbTreeMap<K, V> {
     /// Creates a consuming iterator visiting all the keys, in sorted order.
     ///
     /// # Examples

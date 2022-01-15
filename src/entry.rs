@@ -1,6 +1,6 @@
-use crate::RedBlackTree;
+use crate::RbTreeMap;
 
-impl<K: Ord, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RbTreeMap<K, V> {
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
     ///
     /// # Examples
@@ -27,7 +27,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 #[derive(Debug)]
 pub struct Entry<'a, K: Ord, V> {
     key: K,
-    tree: &'a mut RedBlackTree<K, V>,
+    tree: &'a mut RbTreeMap<K, V>,
 }
 
 impl<'a, K: Ord, V> Entry<'a, K, V> {

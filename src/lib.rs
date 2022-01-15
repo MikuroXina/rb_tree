@@ -7,4 +7,4 @@ mod node;
 mod tests;
 mod tree;
 
-pub use tree::RedBlackTree;
+pub use tree::RbTreeMap;

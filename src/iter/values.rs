@@ -1,12 +1,12 @@
 use std::iter::FusedIterator;
 
-use crate::RedBlackTree;
+use crate::RbTreeMap;
 
 use super::{IntoIter, Range, RangeMut};
 
 pub struct IntoValues<K, V>(IntoIter<K, V>);
 
-impl<K: Ord, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RbTreeMap<K, V> {
     /// Creates a consuming iterator visiting all the values, in order by key.
     ///
     /// # Examples

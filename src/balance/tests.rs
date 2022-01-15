@@ -1,8 +1,8 @@
-use crate::RedBlackTree;
+use crate::RbTreeMap;
 
 #[test]
 fn simple_insert() {
-    let mut tree = RedBlackTree::new();
+    let mut tree = RbTreeMap::new();
     tree.insert(1, ());
     // (1)
     {
@@ -104,7 +104,7 @@ fn simple_insert() {
 
 #[test]
 fn simple_remove() {
-    let mut tree = RedBlackTree::new();
+    let mut tree = RbTreeMap::new();
     tree.insert(1, ());
     tree.insert(4, ());
     tree.insert(2, ());

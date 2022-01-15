@@ -1,10 +1,10 @@
 use std::{borrow, fmt, iter::FusedIterator, marker::PhantomData, ops};
 
-use crate::RedBlackTree;
+use crate::RbTreeMap;
 
 use super::RefLeafRange;
 
-impl<K: Ord, V> RedBlackTree<K, V> {
+impl<K: Ord, V> RbTreeMap<K, V> {
     /// Constructs a double-ended iterator over a sub-range of elements in the map.
     ///
     /// # Examples
