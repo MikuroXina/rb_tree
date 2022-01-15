@@ -238,6 +238,102 @@ impl<T> RbTreeSet<T> {
     {
         Union(MergeIter::new(self.iter(), other.iter()))
     }
+
+    /// Returns `true` if `self` has no elements in common with `other`. This is equivalent to checking for an empty intersection.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let a: RbTreeSet<_> = [1, 2, 3].iter().cloned().collect();
+    /// let mut b = RbTreeSet::new();
+    ///
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(4);
+    /// assert_eq!(a.is_disjoint(&b), true);
+    /// b.insert(1);
+    /// assert_eq!(a.is_disjoint(&b), false);
+    /// ```
+    pub fn is_disjoint(&self, other: &Self) -> bool
+    where
+        T: Ord,
+    {
+        self.intersection(other).next().is_none()
+    }
+
+    /// Returns `true` if the set is a subset of another, i.e., `other` contains at least all the values in `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let sup: RbTreeSet<_> = [1, 2, 3].iter().cloned().collect();
+    /// let mut set = RbTreeSet::new();
+    ///
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(2);
+    /// assert_eq!(set.is_subset(&sup), true);
+    /// set.insert(4);
+    /// assert_eq!(set.is_subset(&sup), false);
+    /// ```
+    pub fn is_subset(&self, other: &Self) -> bool
+    where
+        T: Ord,
+    {
+        if other.len() < self.len() {
+            return false;
+        }
+        let (self_min, self_max) = if let Some(pair) = self.first().zip(self.last()) {
+            pair
+        } else {
+            return true; // self is empty
+        };
+        let (other_min, other_max) = if let Some(pair) = other.first().zip(other.last()) {
+            pair
+        } else {
+            return false; // other is empty
+        };
+
+        use std::cmp::Ordering::*;
+
+        let mut self_iter = self.iter();
+        match self_min.cmp(other_min) {
+            Less => return false,
+            Equal => {
+                self_iter.next();
+            }
+            Greater => (),
+        }
+        match self_max.cmp(other_max) {
+            Greater => return false,
+            Equal => {
+                self_iter.next_back();
+            }
+            Less => (),
+        }
+        if self_iter.len() <= other.len() / ITER_PERFORMANCE_TIPPING_SIZE_DIFF {
+            for next in self_iter {
+                if !other.contains(next) {
+                    return false;
+                }
+            }
+        } else {
+            let mut other_iter = other.iter();
+            other_iter.next();
+            other_iter.next_back();
+            let mut self_next = self_iter.next();
+            while let Some(self1) = self_next {
+                match other_iter.next().map_or(Less, |other1| self1.cmp(other1)) {
+                    Less => return false,
+                    Equal => self_next = self_iter.next(),
+                    Greater => (),
+                }
+            }
+        }
+        true
+    }
 }
 
 #[derive(Debug)]
