@@ -93,21 +93,13 @@ impl<T> RbTreeSet<T> {
     where
         T: Ord,
     {
-        let self_root = self.map.root.inner();
-        let (self_min, self_max) = if let Some((min, max)) = self_root
-            .map(|r| r.min_child())
-            .zip(self_root.map(|r| r.max_child()))
-        {
-            (min.key(), max.key())
+        let (self_min, self_max) = if let Some(pair) = self.first().zip(self.last()) {
+            pair
         } else {
             return Difference(DifferenceInner::Through(self.iter()));
         };
-        let other_root = other.map.root.inner();
-        let (other_min, other_max) = if let Some((min, max)) = other_root
-            .map(|r| r.min_child())
-            .zip(other_root.map(|r| r.max_child()))
-        {
-            (min.key(), max.key())
+        let (other_min, other_max) = if let Some(pair) = other.first().zip(other.last()) {
+            pair
         } else {
             return Difference(DifferenceInner::Through(self.iter()));
         };
@@ -187,41 +179,31 @@ impl<T> RbTreeSet<T> {
     where
         T: Ord,
     {
-        let self_root = self.map.root.inner();
-        let (self_min, self_max) = if let Some((min, max)) = self_root
-            .map(|r| r.min_child())
-            .zip(self_root.map(|r| r.max_child()))
-        {
-            (min.key(), max.key())
+        let (self_min, self_max) = if let Some(pair) = self.first().zip(self.last()) {
+            pair
         } else {
             return Intersection(IntersectionInner::AtLeast(None));
         };
-        let other_root = other.map.root.inner();
-        let (other_min, other_max) = if let Some((min, max)) = other_root
-            .map(|r| r.min_child())
-            .zip(other_root.map(|r| r.max_child()))
-        {
-            (min.key(), max.key())
+        let (other_min, other_max) = if let Some(pair) = other.first().zip(other.last()) {
+            pair
         } else {
             return Intersection(IntersectionInner::AtLeast(None));
         };
         use std::cmp::Ordering::*;
         let inner = match (self_min.cmp(other_max), self_max.cmp(other_min)) {
             (Greater, _) | (_, Less) => IntersectionInner::AtLeast(None),
-            (Equal, _) => {
-                let mut iter = self.iter();
-                iter.next();
-                IntersectionInner::AtLeast(Some(self_min))
-            }
-            (_, Equal) => {
-                let mut iter = self.iter();
-                iter.next_back();
-                IntersectionInner::AtLeast(Some(self_max))
-            }
+            (Equal, _) => IntersectionInner::AtLeast(Some(self_min)),
+            (_, Equal) => IntersectionInner::AtLeast(Some(self_max)),
             _ if self.len() <= other.len() / ITER_PERFORMANCE_TIPPING_SIZE_DIFF => {
                 IntersectionInner::Search {
                     small_iter: self.iter(),
                     large_set: other,
+                }
+            }
+            _ if other.len() <= self.len() / ITER_PERFORMANCE_TIPPING_SIZE_DIFF => {
+                IntersectionInner::Search {
+                    small_iter: other.iter(),
+                    large_set: self,
                 }
             }
             _ => IntersectionInner::Stitch {

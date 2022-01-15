@@ -152,6 +152,30 @@ impl<T> RbTreeSet<T> {
     pub fn clear(&mut self) {
         self.map.clear();
     }
+
+    pub fn first<Q>(&self) -> Option<&Q>
+    where
+        T: Ord + Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.map
+            .root
+            .inner()
+            .map(|r| r.min_child())
+            .map(|n| n.key())
+    }
+
+    pub fn last<Q>(&self) -> Option<&Q>
+    where
+        T: Ord + Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.map
+            .root
+            .inner()
+            .map(|r| r.max_child())
+            .map(|n| n.key())
+    }
 }
 
 impl<T: Ord> FromIterator<T> for RbTreeSet<T> {
