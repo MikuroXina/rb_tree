@@ -31,6 +31,7 @@ impl PreviousStep {
     }
 }
 
+#[derive(Debug)]
 pub struct IntoIter<K, V> {
     range: DyingLeafRange<K, V>,
     length: usize,

@@ -6,6 +6,7 @@ use crate::{
     RbTreeMap,
 };
 
+#[derive(Debug)]
 pub struct DyingLeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
     start_prev: PreviousStep,

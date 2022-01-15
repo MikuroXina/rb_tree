@@ -1,3 +1,4 @@
+mod drain;
 mod merge;
 
 use self::merge::MergeIter;
@@ -362,6 +363,55 @@ impl<T> RbTreeSet<T> {
     }
 }
 
+impl<T> IntoIterator for RbTreeSet<T> {
+    type Item = T;
+
+    type IntoIter = IntoIter<T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter(self.map.into_keys())
+    }
+}
+
+#[derive(Debug)]
+pub struct IntoIter<T>(crate::map::iter::IntoKeys<T, ()>);
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
+    }
+}
+
+impl<T> DoubleEndedIterator for IntoIter<T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.0.next_back()
+    }
+}
+
+impl<T> ExactSizeIterator for IntoIter<T> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<T> FusedIterator for IntoIter<T> {}
+
+impl<'a, T> IntoIterator for &'a RbTreeSet<T> {
+    type Item = &'a T;
+
+    type IntoIter = Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter(self.map.keys())
+    }
+}
+
 #[derive(Debug)]
 pub struct Iter<'a, T>(crate::map::iter::Keys<'a, T, ()>);
 
@@ -376,6 +426,10 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.0.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.0.size_hint()
     }
 }
 

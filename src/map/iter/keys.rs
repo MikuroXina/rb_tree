@@ -46,6 +46,7 @@ impl<K, V> RbTreeMap<K, V> {
     }
 }
 
+#[derive(Debug)]
 pub struct IntoKeys<K, V>(IntoIter<K, V>);
 
 impl<K, V> Iterator for IntoKeys<K, V> {
