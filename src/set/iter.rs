@@ -334,6 +334,32 @@ impl<T> RbTreeSet<T> {
         }
         true
     }
+
+    /// Returns `true` if the set is a superset of another, i.e., `self` contains at least all the values in `other`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let sub: RbTreeSet<_> = [1, 2].iter().cloned().collect();
+    /// let mut set = RbTreeSet::new();
+    ///
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(0);
+    /// set.insert(1);
+    /// assert_eq!(set.is_superset(&sub), false);
+    ///
+    /// set.insert(2);
+    /// assert_eq!(set.is_superset(&sub), true);
+    /// ```
+    pub fn is_superset(&self, other: &Self) -> bool
+    where
+        T: Ord,
+    {
+        other.is_subset(self)
+    }
 }
 
 #[derive(Debug)]
