@@ -54,7 +54,7 @@ impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RbTreeMap<
     }
 }
 
-impl<K: hash::Hash + Ord, V: hash::Hash> hash::Hash for RbTreeMap<K, V> {
+impl<K: hash::Hash, V: hash::Hash> hash::Hash for RbTreeMap<K, V> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
         self.root.len().hash(state);
         self.iter().for_each(|e| e.hash(state));
@@ -83,15 +83,15 @@ where
     }
 }
 
-impl<K: Ord, V: PartialEq> PartialEq for RbTreeMap<K, V> {
+impl<K: PartialEq, V: PartialEq> PartialEq for RbTreeMap<K, V> {
     fn eq(&self, other: &Self) -> bool {
         self.root.len() == other.root.len() && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 
-impl<K: Ord, V: Eq> Eq for RbTreeMap<K, V> {}
+impl<K: Eq, V: Eq> Eq for RbTreeMap<K, V> {}
 
-impl<K: Ord, V: PartialOrd> PartialOrd for RbTreeMap<K, V> {
+impl<K: PartialOrd, V: PartialOrd> PartialOrd for RbTreeMap<K, V> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.iter().partial_cmp(other.iter())
     }
