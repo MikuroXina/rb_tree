@@ -10,10 +10,10 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     /// use std::ops::Bound::Included;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(3, "a");
     /// map.insert(5, "b");
     /// map.insert(8, "c");
@@ -37,9 +37,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map: RedBlackTree<&str, i32> = ["Alice", "Bob", "Carol", "Cheryl"]
+    /// let mut map: RbTreeMap<&str, i32> = ["Alice", "Bob", "Carol", "Cheryl"]
     ///     .into_iter()
     ///     .map(|s| (s, 0))
     ///     .collect();

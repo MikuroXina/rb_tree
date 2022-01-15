@@ -18,10 +18,10 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map: RedBlackTree<i32, i32> = (0..8).map(|x| (x, x)).collect();
-    /// let evens: RedBlackTree<_, _> = map.drain_filter(|k, _| k % 2 == 0).collect();
+    /// let mut map: RbTreeMap<i32, i32> = (0..8).map(|x| (x, x)).collect();
+    /// let evens: RbTreeMap<_, _> = map.drain_filter(|k, _| k % 2 == 0).collect();
     /// let odds = map;
     ///
     /// assert_eq!(evens.into_keys().collect::<Vec<_>>(), vec![0, 2, 4, 6]);

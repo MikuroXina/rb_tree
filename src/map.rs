@@ -2,6 +2,7 @@ use crate::node::Root;
 
 use std::{borrow::Borrow, fmt, hash, ops};
 
+/// A map based on a red-black tree.
 pub struct RbTreeMap<K, V> {
     pub(crate) root: Root<K, V>,
 }
@@ -101,14 +102,14 @@ impl<K: Ord, V: Ord> Ord for RbTreeMap<K, V> {
 }
 
 impl<K, V> RbTreeMap<K, V> {
-    /// Creates an empty `RedBlackTree`.
+    /// Creates an empty `RbTreeMap`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     ///
     /// map.insert(1, "a");
     /// ```
@@ -122,9 +123,9 @@ impl<K, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut a = RedBlackTree::new();
+    /// let mut a = RbTreeMap::new();
     /// a.insert(1, "a");
     /// a.clear();
     /// assert!(a.is_empty());
@@ -139,9 +140,9 @@ impl<K, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut a = RedBlackTree::new();
+    /// let mut a = RbTreeMap::new();
     /// assert!(a.is_empty());
     /// a.insert(1, "a");
     /// assert!(!a.is_empty());
@@ -156,9 +157,9 @@ impl<K, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut a = RedBlackTree::new();
+    /// let mut a = RbTreeMap::new();
     /// assert_eq!(a.len(), 0);
     /// a.insert(1, "a");
     /// assert_eq!(a.len(), 1);
@@ -175,14 +176,14 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut a = RedBlackTree::new();
+    /// let mut a = RbTreeMap::new();
     /// a.insert(1, "a");
     /// a.insert(2, "b");
     /// a.insert(3, "c");
     ///
-    /// let mut b = RedBlackTree::new();
+    /// let mut b = RbTreeMap::new();
     /// b.insert(3, "d");
     /// b.insert(4, "e");
     /// b.insert(5, "f");
@@ -221,9 +222,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::<i32, &str>::new();
+    /// let mut map = RbTreeMap::<i32, &str>::new();
     /// assert_eq!(map.insert(37, "a"), None);
     /// assert_eq!(map.is_empty(), false);
     ///
@@ -239,9 +240,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// Removes a key from the map, returning the old value if the key was in.
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.remove(&1), Some("a"));
     /// assert_eq!(map.remove(&1), None);
@@ -258,9 +259,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// Removes a key from the map, returning the old key-value pair if the key was in.
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.remove_entry(&1), Some((1, "a")));
     /// assert_eq!(map.remove_entry(&1), None);
@@ -279,9 +280,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.get(&1), Some(&"a"));
     /// assert_eq!(map.get(&2), None);
@@ -300,9 +301,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(1, "a");
     /// if let Some(x) = map.get_mut(&1) {
     ///     *x = "b";
@@ -326,9 +327,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.get_key_value(&1), Some((&1, &"a")));
     /// assert_eq!(map.get_key_value(&2), None);
@@ -350,9 +351,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.insert(1, "a");
     /// assert_eq!(map.contains_key(&1), true);
     /// assert_eq!(map.contains_key(&2), false);
@@ -371,9 +372,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map: RedBlackTree<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
+    /// let mut map: RbTreeMap<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
     /// map.retain(|&k, _| k % 2 == 0);
     /// assert_eq!(map.into_iter().collect::<Vec<_>>(), vec![(0, 0), (2, 20), (4, 40), (6, 60)]);
     /// ```

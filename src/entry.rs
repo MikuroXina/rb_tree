@@ -6,9 +6,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut count = RedBlackTree::new();
+    /// let mut count = RbTreeMap::new();
     ///
     /// for x in ["a", "b", "a", "c", "a", "b"] {
     ///     *count.entry(x).or_insert(0) += 1;
@@ -42,9 +42,9 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.entry("poneyland").or_insert(12);
     ///
     /// assert_eq!(map["poneyland"], 12);
@@ -70,9 +70,9 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.entry("poneyland").or_insert_with(|| "hoho".to_string());
     ///
     /// assert_eq!(map["poneyland"], "hoho".to_string());
@@ -89,9 +89,9 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     /// map.entry("poneyland").or_insert_with_key(|key| key.chars().count());
     ///
     /// assert_eq!(map["poneyland"], 9);
@@ -118,9 +118,9 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map = RedBlackTree::new();
+    /// let mut map = RbTreeMap::new();
     ///
     /// map.entry("poneyland")
     ///     .and_modify(|e| *e += 1)
@@ -146,9 +146,9 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut map: RedBlackTree<&str, Option<usize>> = RedBlackTree::new();
+    /// let mut map: RbTreeMap<&str, Option<usize>> = RbTreeMap::new();
     /// map.entry("poneyland").or_default();
     ///
     /// assert_eq!(map["poneyland"], None);

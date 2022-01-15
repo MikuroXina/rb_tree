@@ -10,9 +10,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut a = RedBlackTree::new();
+    /// let mut a = RbTreeMap::new();
     /// a.insert(2, "b");
     /// a.insert(1, "a");
     ///
@@ -31,9 +31,9 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// # Examples
     ///
     /// ```
-    /// use rb_tree::RedBlackTree;
+    /// use rb_tree::RbTreeMap;
     ///
-    /// let mut a = RedBlackTree::new();
+    /// let mut a = RbTreeMap::new();
     /// a.insert(2, "b");
     /// a.insert(1, "a");
     ///
