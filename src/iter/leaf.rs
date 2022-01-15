@@ -8,7 +8,9 @@ use crate::{
 
 pub struct DyingLeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
+    start_prev: PreviousStep,
     end: Option<NodeRef<K, V>>,
+    end_prev: PreviousStep,
 }
 
 impl<K, V> DyingLeafRange<K, V> {
@@ -16,23 +18,102 @@ impl<K, V> DyingLeafRange<K, V> {
         let start = tree.root.inner().map(|r| r.min_child());
         let end = tree.root.inner().map(|r| r.max_child());
         std::mem::forget(tree);
-        Self { start, end }
+        Self {
+            start,
+            start_prev: PreviousStep::LeftChild,
+            end,
+            end_prev: PreviousStep::RightChild,
+        }
     }
 
     pub fn cut_left(&mut self) -> Option<(K, V)> {
-        // FIXME: fix with PreviousStep
-        let start = self.start?;
-        let next = start.right().or_else(|| start.parent());
-        // Safety: The dying reference is deallocated.
-        std::mem::replace(&mut self.start, next).map(|p| unsafe { p.deallocate() })
+        while let Some(curr) = self.start {
+            match self.start_prev {
+                PreviousStep::Parent => {
+                    // descended
+                    if let Some(left) = curr.left() {
+                        // go to left
+                        self.start = Some(left);
+                        continue;
+                    }
+                    self.start_prev = PreviousStep::LeftChild;
+                }
+                PreviousStep::LeftChild => {
+                    // ascended from left
+                    if self.start == self.end && self.end_prev.is_right_child() {
+                        // finish
+                        self.start = None;
+                        self.end = None;
+                    } else if let Some(right) = curr.right() {
+                        // go to right
+                        self.start_prev = PreviousStep::Parent;
+                        self.start = Some(right);
+                    } else {
+                        self.start_prev = PreviousStep::RightChild;
+                    }
+                    unsafe {
+                        return Some((std::ptr::read(curr.key()), std::ptr::read(curr.value())));
+                    }
+                }
+                PreviousStep::RightChild => {
+                    // ascended from right, so ascend again
+                    self.start = curr.parent();
+                    if let Some(ChildIndex::Left) = curr.index_on_parent() {
+                        self.start_prev = PreviousStep::LeftChild;
+                    }
+                    // deallocate now
+                    unsafe {
+                        curr.deallocate();
+                    }
+                }
+            }
+        }
+        None
     }
 
     pub fn cut_right(&mut self) -> Option<(K, V)> {
-        // FIXME: fix with PreviousStep
-        let end = self.end?;
-        let next = end.left().or_else(|| end.parent());
-        // Safety: The dying reference is deallocated.
-        std::mem::replace(&mut self.end, next).map(|p| unsafe { p.deallocate() })
+        while let Some(curr) = self.end {
+            match self.end_prev {
+                PreviousStep::Parent => {
+                    // descended
+                    if let Some(right) = curr.right() {
+                        // go to right
+                        self.end = Some(right);
+                        continue;
+                    }
+                    self.end_prev = PreviousStep::RightChild;
+                }
+                PreviousStep::RightChild => {
+                    // ascended from right
+                    if self.start == self.end && self.start_prev.is_left_child() {
+                        // finish
+                        self.start = None;
+                        self.end = None;
+                    } else if let Some(left) = curr.left() {
+                        // go to left
+                        self.end_prev = PreviousStep::Parent;
+                        self.end = Some(left);
+                    } else {
+                        self.end_prev = PreviousStep::LeftChild;
+                    }
+                    unsafe {
+                        return Some((std::ptr::read(curr.key()), std::ptr::read(curr.value())));
+                    }
+                }
+                PreviousStep::LeftChild => {
+                    // ascended from left, so ascend again
+                    self.end = curr.parent();
+                    if let Some(ChildIndex::Right) = curr.index_on_parent() {
+                        self.start_prev = PreviousStep::RightChild;
+                    }
+                    // deallocate now
+                    unsafe {
+                        curr.deallocate();
+                    }
+                }
+            }
+        }
+        None
     }
 }
 

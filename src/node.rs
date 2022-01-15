@@ -337,6 +337,18 @@ impl<K, V> NodeRef<K, V> {
     ///
     /// # Safety
     ///
+    /// The mutable reference of its value must not exist.
+    pub unsafe fn value<'a>(self) -> &'a V
+    where
+        K: 'a,
+    {
+        &self.0.as_ref().value
+    }
+
+    /// Returns the mutable reference of value pair from the node.
+    ///
+    /// # Safety
+    ///
     /// The shared reference of its value must not exist.
     pub unsafe fn value_mut<'a>(mut self) -> &'a mut V
     where
