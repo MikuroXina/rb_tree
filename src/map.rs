@@ -1,3 +1,5 @@
+pub mod iter;
+
 use crate::node::Root;
 
 use std::{borrow::Borrow, fmt, hash, ops};

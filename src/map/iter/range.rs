@@ -69,10 +69,7 @@ impl<K, V> Clone for Range<'_, K, V> {
     }
 }
 
-impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Range<'_, K, V>
-where
-    K: Ord,
-{
+impl<K: fmt::Debug, V: fmt::Debug> fmt::Debug for Range<'_, K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.clone()).finish()
     }
@@ -80,7 +77,7 @@ where
 
 impl<'a, K, V> Iterator for Range<'a, K, V>
 where
-    K: Ord + 'a,
+    K: 'a,
     V: 'a,
 {
     type Item = (&'a K, &'a V);
@@ -106,7 +103,7 @@ where
 
 impl<'a, K, V> DoubleEndedIterator for Range<'a, K, V>
 where
-    K: Ord + 'a,
+    K: 'a,
     V: 'a,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -117,7 +114,7 @@ where
 
 impl<'a, K, V> FusedIterator for Range<'a, K, V>
 where
-    K: Ord + 'a,
+    K: 'a,
     V: 'a,
 {
 }

@@ -2,9 +2,9 @@ use std::iter::FusedIterator;
 
 use crate::RbTreeMap;
 
-use super::{IntoIter, Range};
+use super::{IntoIter, Iter};
 
-impl<K: Ord, V> RbTreeMap<K, V> {
+impl<K, V> RbTreeMap<K, V> {
     /// Creates a consuming iterator visiting all the keys, in sorted order.
     ///
     /// # Examples
@@ -86,9 +86,16 @@ impl<K, V> ExactSizeIterator for IntoKeys<K, V> {
 
 impl<K, V> FusedIterator for IntoKeys<K, V> {}
 
-pub struct Keys<'a, K, V>(Range<'a, K, V>, usize);
+#[derive(Debug)]
+pub struct Keys<'a, K, V>(Iter<'a, K, V>, usize);
 
-impl<'a, K: 'a + Ord, V: 'a> Iterator for Keys<'a, K, V> {
+impl<K, V> Clone for Keys<'_, K, V> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone(), self.1)
+    }
+}
+
+impl<'a, K: 'a, V: 'a> Iterator for Keys<'a, K, V> {
     type Item = &'a K;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -115,7 +122,7 @@ impl<'a, K: 'a + Ord, V: 'a> Iterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K: 'a + Ord, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
+impl<'a, K: 'a, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.0.next_back().map(|(k, _)| {
             self.1 -= 1;
@@ -124,10 +131,10 @@ impl<'a, K: 'a + Ord, V: 'a> DoubleEndedIterator for Keys<'a, K, V> {
     }
 }
 
-impl<'a, K: 'a + Ord, V: 'a> ExactSizeIterator for Keys<'a, K, V> {
+impl<'a, K: 'a, V: 'a> ExactSizeIterator for Keys<'a, K, V> {
     fn len(&self) -> usize {
         self.1
     }
 }
 
-impl<'a, K: 'a + Ord, V: 'a> FusedIterator for Keys<'a, K, V> {}
+impl<'a, K: 'a, V: 'a> FusedIterator for Keys<'a, K, V> {}

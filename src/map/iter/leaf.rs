@@ -113,6 +113,7 @@ impl<K, V> DyingLeafRange<K, V> {
     }
 }
 
+#[derive(Debug)]
 pub struct RefLeafRange<K, V> {
     start: Option<NodeRef<K, V>>,
     start_prev: PreviousStep,
@@ -127,6 +128,23 @@ impl<K, V> Clone for RefLeafRange<K, V> {
 }
 
 impl<K, V> RefLeafRange<K, V> {
+    pub fn all(tree: &RbTreeMap<K, V>) -> Self {
+        let root = tree.root.inner();
+        let (start, end) = if let Some((start, end)) =
+            root.map(|r| r.min_child()).zip(root.map(|r| r.max_child()))
+        {
+            (Some(start), Some(end))
+        } else {
+            (None, None)
+        };
+        Self {
+            start,
+            start_prev: PreviousStep::LeftChild,
+            end,
+            end_prev: PreviousStep::RightChild,
+        }
+    }
+
     pub fn new<R, Q>(tree: &RbTreeMap<K, V>, range: R) -> Self
     where
         K: Ord + borrow::Borrow<Q>,

@@ -10,7 +10,7 @@ pub use leaf::*;
 pub use range::*;
 pub use values::*;
 
-use std::iter::FusedIterator;
+use std::{iter::FusedIterator, marker::PhantomData};
 
 use crate::RbTreeMap;
 
@@ -36,7 +36,21 @@ pub struct IntoIter<K, V> {
     length: usize,
 }
 
-impl<K: Ord, V> RbTreeMap<K, V> {
+#[derive(Debug)]
+pub struct Iter<'a, K, V> {
+    range: RefLeafRange<K, V>,
+    length: usize,
+    _phantom: PhantomData<(&'a K, &'a V)>,
+}
+
+#[derive(Debug)]
+pub struct IterMut<'a, K, V> {
+    range: RefLeafRange<K, V>,
+    length: usize,
+    _phantom: PhantomData<(&'a K, &'a mut V)>,
+}
+
+impl<K, V> RbTreeMap<K, V> {
     /// Gets an iterator over the entries of the map, sorted by key.
     ///
     /// # Examples
@@ -56,8 +70,13 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// assert_eq!(iter.next(), None);
     /// ```
     #[inline]
-    pub fn iter(&self) -> Range<K, V> {
-        self.range(..)
+    pub fn iter(&self) -> Iter<K, V> {
+        let length = self.root.len();
+        Iter {
+            range: RefLeafRange::all(self),
+            length,
+            _phantom: PhantomData,
+        }
     }
 
     /// Gets a iterator over the entries of the map, sorted by key.
@@ -83,8 +102,13 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// assert_eq!(map[&"c"], 13);
     /// ```
     #[inline]
-    pub fn iter_mut(&mut self) -> RangeMut<K, V> {
-        self.range_mut(..)
+    pub fn iter_mut(&mut self) -> IterMut<K, V> {
+        let length = self.root.len();
+        IterMut {
+            range: RefLeafRange::all(self),
+            length,
+            _phantom: PhantomData,
+        }
     }
 }
 
@@ -153,22 +177,112 @@ impl<K, V> ExactSizeIterator for IntoIter<K, V> {
 
 impl<K, V> FusedIterator for IntoIter<K, V> {}
 
-impl<'a, K: Ord, V> IntoIterator for &'a RbTreeMap<K, V> {
+impl<'a, K, V> IntoIterator for &'a RbTreeMap<K, V> {
     type Item = (&'a K, &'a V);
 
-    type IntoIter = Range<'a, K, V>;
+    type IntoIter = Iter<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.range(..)
+        self.iter()
     }
 }
 
-impl<'a, K: Ord, V> IntoIterator for &'a mut RbTreeMap<K, V> {
+impl<K, V> Clone for Iter<'_, K, V> {
+    fn clone(&self) -> Self {
+        Self {
+            range: self.range.clone(),
+            length: self.length,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, K, V> Iterator for Iter<'a, K, V> {
+    type Item = (&'a K, &'a V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_left().map(|n| unsafe { n.key_value() })
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+}
+
+impl<K, V> DoubleEndedIterator for Iter<'_, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right().map(|n| unsafe { n.key_value() })
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for Iter<'_, K, V> {
+    fn len(&self) -> usize {
+        self.length
+    }
+}
+
+impl<K, V> FusedIterator for Iter<'_, K, V> {}
+
+impl<'a, K, V> IntoIterator for &'a mut RbTreeMap<K, V> {
     type Item = (&'a K, &'a mut V);
 
-    type IntoIter = RangeMut<'a, K, V>;
+    type IntoIter = IterMut<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.range_mut(..)
+        self.iter_mut()
     }
 }
+
+impl<'a, K, V> Iterator for IterMut<'a, K, V> {
+    type Item = (&'a K, &'a mut V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_left().map(|n| unsafe { n.key_value_mut() })
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.length, Some(self.length))
+    }
+
+    fn last(mut self) -> Option<Self::Item> {
+        self.next_back()
+    }
+}
+
+impl<K, V> DoubleEndedIterator for IterMut<'_, K, V> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.length == 0 {
+            None
+        } else {
+            self.length -= 1;
+            self.range.cut_right().map(|n| unsafe { n.key_value_mut() })
+        }
+    }
+}
+
+impl<K, V> ExactSizeIterator for IterMut<'_, K, V> {
+    fn len(&self) -> usize {
+        self.length
+    }
+}
+
+impl<K, V> FusedIterator for IterMut<'_, K, V> {}

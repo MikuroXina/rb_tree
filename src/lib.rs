@@ -1,7 +1,6 @@
 mod balance;
 pub mod entry;
-pub mod iter;
-mod map;
+pub mod map;
 mod mem;
 mod node;
 #[cfg(test)]

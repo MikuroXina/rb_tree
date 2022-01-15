@@ -2,11 +2,11 @@ use std::iter::FusedIterator;
 
 use crate::RbTreeMap;
 
-use super::{IntoIter, Range, RangeMut};
+use super::{IntoIter, Iter, IterMut};
 
 pub struct IntoValues<K, V>(IntoIter<K, V>);
 
-impl<K: Ord, V> RbTreeMap<K, V> {
+impl<K, V> RbTreeMap<K, V> {
     /// Creates a consuming iterator visiting all the values, in order by key.
     ///
     /// # Examples
@@ -103,7 +103,7 @@ impl<K, V> ExactSizeIterator for IntoValues<K, V> {
 
 impl<K, V> FusedIterator for IntoValues<K, V> {}
 
-pub struct Values<'a, K, V>(Range<'a, K, V>, usize);
+pub struct Values<'a, K, V>(Iter<'a, K, V>, usize);
 
 impl<'a, K: 'a + Ord, V: 'a> Iterator for Values<'a, K, V> {
     type Item = &'a V;
@@ -141,7 +141,7 @@ impl<'a, K: 'a + Ord, V: 'a> ExactSizeIterator for Values<'a, K, V> {
 
 impl<'a, K: 'a + Ord, V: 'a> FusedIterator for Values<'a, K, V> {}
 
-pub struct ValuesMut<'a, K, V>(RangeMut<'a, K, V>, usize);
+pub struct ValuesMut<'a, K, V>(IterMut<'a, K, V>, usize);
 
 impl<'a, K: 'a + Ord, V: 'a> Iterator for ValuesMut<'a, K, V> {
     type Item = &'a mut V;
