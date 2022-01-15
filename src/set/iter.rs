@@ -162,6 +162,75 @@ impl<T> RbTreeSet<T> {
     {
         SymmetricDifference(MergeIter::new(self.iter(), other.iter()))
     }
+
+    /// Visits the values representing the intersection,
+    /// i.e., the values that are both in `self` and `other`,
+    /// in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut a = RbTreeSet::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    ///
+    /// let mut b = RbTreeSet::new();
+    /// b.insert(2);
+    /// b.insert(3);
+    ///
+    /// let intersection: Vec<_> = a.intersection(&b).cloned().collect();
+    /// assert_eq!(intersection, [2]);
+    /// ```
+    pub fn intersection<'a>(&'a self, other: &'a Self) -> Intersection<'a, T>
+    where
+        T: Ord,
+    {
+        let self_root = self.map.root.inner();
+        let (self_min, self_max) = if let Some((min, max)) = self_root
+            .map(|r| r.min_child())
+            .zip(self_root.map(|r| r.max_child()))
+        {
+            (min.key(), max.key())
+        } else {
+            return Intersection(IntersectionInner::AtLeast(None));
+        };
+        let other_root = other.map.root.inner();
+        let (other_min, other_max) = if let Some((min, max)) = other_root
+            .map(|r| r.min_child())
+            .zip(other_root.map(|r| r.max_child()))
+        {
+            (min.key(), max.key())
+        } else {
+            return Intersection(IntersectionInner::AtLeast(None));
+        };
+        use std::cmp::Ordering::*;
+        let inner = match (self_min.cmp(other_max), self_max.cmp(other_min)) {
+            (Greater, _) | (_, Less) => IntersectionInner::AtLeast(None),
+            (Equal, _) => {
+                let mut iter = self.iter();
+                iter.next();
+                IntersectionInner::AtLeast(Some(self_min))
+            }
+            (_, Equal) => {
+                let mut iter = self.iter();
+                iter.next_back();
+                IntersectionInner::AtLeast(Some(self_max))
+            }
+            _ if self.len() <= other.len() / ITER_PERFORMANCE_TIPPING_SIZE_DIFF => {
+                IntersectionInner::Search {
+                    small_iter: self.iter(),
+                    large_set: other,
+                }
+            }
+            _ => IntersectionInner::Stitch {
+                a: self.iter(),
+                b: other.iter(),
+            },
+        };
+        Intersection(inner)
+    }
 }
 
 #[derive(Debug)]
@@ -223,10 +292,12 @@ enum DifferenceInner<'a, T: 'a> {
         self_iter: Iter<'a, T>,
         other_iter: Peekable<Iter<'a, T>>,
     },
+    /// iterates a small set, looks up in the large set
     Search {
         self_iter: Iter<'a, T>,
         other_set: &'a RbTreeSet<T>,
     },
+    /// goes through the iterator
     Through(Iter<'a, T>),
 }
 
@@ -344,3 +415,83 @@ impl<'a, T: Ord + 'a> Iterator for SymmetricDifference<'a, T> {
 }
 
 impl<T: Ord> FusedIterator for SymmetricDifference<'_, T> {}
+
+#[derive(Debug)]
+pub struct Intersection<'a, T>(IntersectionInner<'a, T>);
+
+#[derive(Debug)]
+enum IntersectionInner<'a, T> {
+    /// iterate similarly sized sets jointly, spotting matches along the way
+    Stitch { a: Iter<'a, T>, b: Iter<'a, T> },
+    /// iterates a small set, looks up in the large set
+    Search {
+        small_iter: Iter<'a, T>,
+        large_set: &'a RbTreeSet<T>,
+    },
+    /// returns a specific value or emptiness
+    AtLeast(Option<&'a T>),
+}
+
+impl<T> Clone for Intersection<'_, T> {
+    fn clone(&self) -> Self {
+        Self(match &self.0 {
+            IntersectionInner::Stitch { a, b } => IntersectionInner::Stitch {
+                a: a.clone(),
+                b: b.clone(),
+            },
+            IntersectionInner::Search {
+                small_iter,
+                large_set,
+            } => IntersectionInner::Search {
+                small_iter: small_iter.clone(),
+                large_set,
+            },
+            IntersectionInner::AtLeast(opt) => IntersectionInner::AtLeast(*opt),
+        })
+    }
+}
+
+impl<'a, T: Ord + 'a> Iterator for Intersection<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        use std::cmp::Ordering::*;
+        match &mut self.0 {
+            IntersectionInner::Stitch { a, b } => {
+                let (mut a_next, mut b_next) = (a.next()?, b.next()?);
+                loop {
+                    match a_next.cmp(b_next) {
+                        Less => a_next = a.next()?,
+                        Equal => b_next = b.next()?,
+                        Greater => return Some(a_next),
+                    }
+                }
+            }
+            IntersectionInner::Search {
+                small_iter,
+                large_set,
+            } => loop {
+                let next = small_iter.next()?;
+                if large_set.contains(next) {
+                    return Some(next);
+                }
+            },
+            IntersectionInner::AtLeast(opt) => opt.take(),
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match &self.0 {
+            IntersectionInner::Stitch { a, b } => (0, Some(a.len().min(b.len()))),
+            IntersectionInner::Search { small_iter, .. } => (0, Some(small_iter.len())),
+            IntersectionInner::AtLeast(None) => (0, Some(0)),
+            IntersectionInner::AtLeast(Some(_)) => (1, Some(1)),
+        }
+    }
+
+    fn min(mut self) -> Option<Self::Item> {
+        self.next()
+    }
+}
+
+impl<T: Ord> FusedIterator for Intersection<'_, T> {}
