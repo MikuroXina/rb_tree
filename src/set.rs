@@ -167,16 +167,12 @@ impl<T> RbTreeSet<T> {
     /// set.insert(2);
     /// assert_eq!(set.first(), Some(&1));
     /// ```
-    pub fn min<Q>(&self) -> Option<&Q>
+    pub fn first<Q>(&self) -> Option<&Q>
     where
         T: Ord + Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        self.map
-            .root
-            .inner()
-            .map(|r| r.min_child())
-            .map(|n| n.key())
+        self.map.first().map(|(k, _)| k.borrow())
     }
 
     /// Returns a reference to the last value in the set, if any. This value is always the maximum of all values in the set.
@@ -193,16 +189,56 @@ impl<T> RbTreeSet<T> {
     /// set.insert(2);
     /// assert_eq!(set.last(), Some(&2));
     /// ```
-    pub fn max<Q>(&self) -> Option<&Q>
+    pub fn last<Q>(&self) -> Option<&Q>
     where
         T: Ord + Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        self.map
-            .root
-            .inner()
-            .map(|r| r.max_child())
-            .map(|n| n.key())
+        self.map.last().map(|(k, _)| k.borrow())
+    }
+
+    /// Removes the first value from the set and returns it, if any. The first value is always the minimum value in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set = RbTreeSet::new();
+    ///
+    /// set.insert(1);
+    /// while let Some(n) = set.pop_first() {
+    ///     assert_eq!(n, 1);
+    /// }
+    /// assert!(set.is_empty());
+    /// ```
+    pub fn pop_first(&mut self) -> Option<T>
+    where
+        T: Ord,
+    {
+        self.map.pop_first().map(|(k, _)| k)
+    }
+
+    /// Removes the last value from the set and returns it, if any. The last value is always the maximum value in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set = RbTreeSet::new();
+    ///
+    /// set.insert(1);
+    /// while let Some(n) = set.pop_last() {
+    ///     assert_eq!(n, 1);
+    /// }
+    /// assert!(set.is_empty());
+    /// ```
+    pub fn pop_last(&mut self) -> Option<T>
+    where
+        T: Ord,
+    {
+        self.map.pop_last().map(|(k, _)| k)
     }
 }
 

@@ -384,4 +384,28 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     pub fn retain<F: FnMut(&K, &mut V) -> bool>(&mut self, mut f: F) {
         self.drain_filter(move |k, v| !f(k, v));
     }
+
+    pub fn first(&self) -> Option<(&K, &V)> {
+        Some(unsafe { self.root.inner()?.min_child().key_value() })
+    }
+
+    pub fn last(&self) -> Option<(&K, &V)> {
+        Some(unsafe { self.root.inner()?.max_child().key_value() })
+    }
+
+    pub fn first_mut(&mut self) -> Option<(&K, &mut V)> {
+        Some(unsafe { self.root.inner()?.min_child().key_value_mut() })
+    }
+
+    pub fn last_mut(&mut self) -> Option<(&K, &mut V)> {
+        Some(unsafe { self.root.inner()?.max_child().key_value_mut() })
+    }
+
+    pub fn pop_first(&mut self) -> Option<(K, V)> {
+        self.root.remove_min()
+    }
+
+    pub fn pop_last(&mut self) -> Option<(K, V)> {
+        self.root.remove_max()
+    }
 }

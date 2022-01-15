@@ -130,6 +130,18 @@ impl<K, V> Root<K, V> {
         }
     }
 
+    pub fn remove_min(&mut self) -> Option<(K, V)> {
+        let min = self.root?.min_child();
+
+        self.delete_node(min)
+    }
+
+    pub fn remove_max(&mut self) -> Option<(K, V)> {
+        let max = self.root?.max_child();
+
+        self.delete_node(max)
+    }
+
     pub fn remove_node<Q>(&mut self, key: &Q) -> Option<(K, V)>
     where
         K: Ord + Borrow<Q>,
@@ -137,6 +149,10 @@ impl<K, V> Root<K, V> {
     {
         let to_remove = self.root?.search(key).ok()?;
 
+        self.delete_node(to_remove)
+    }
+
+    fn delete_node(&mut self, to_remove: NodeRef<K, V>) -> Option<(K, V)> {
         self.len -= 1;
 
         if Some(to_remove) == self.root && to_remove.children() == (None, None) {
