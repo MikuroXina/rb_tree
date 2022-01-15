@@ -61,10 +61,8 @@ impl<K, V> DyingLeafRange<K, V> {
                     if let Some(ChildIndex::Left) = curr.index_on_parent() {
                         self.start_prev = PreviousStep::LeftChild;
                     }
-                    // deallocate now
-                    unsafe {
-                        curr.deallocate();
-                    }
+                    // deallocate now and forget, because it will be dropped on outside.
+                    std::mem::forget(unsafe { curr.deallocate() });
                 }
             }
         }
@@ -106,10 +104,8 @@ impl<K, V> DyingLeafRange<K, V> {
                     if let Some(ChildIndex::Right) = curr.index_on_parent() {
                         self.start_prev = PreviousStep::RightChild;
                     }
-                    // deallocate now
-                    unsafe {
-                        curr.deallocate();
-                    }
+                    // deallocate now and forget, because it will be dropped on outside.
+                    std::mem::forget(unsafe { curr.deallocate() });
                 }
             }
         }
