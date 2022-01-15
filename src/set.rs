@@ -167,7 +167,7 @@ impl<T> RbTreeSet<T> {
     /// set.insert(2);
     /// assert_eq!(set.first(), Some(&1));
     /// ```
-    pub fn first<Q>(&self) -> Option<&Q>
+    pub fn min<Q>(&self) -> Option<&Q>
     where
         T: Ord + Borrow<Q>,
         Q: Ord + ?Sized,
@@ -193,7 +193,7 @@ impl<T> RbTreeSet<T> {
     /// set.insert(2);
     /// assert_eq!(set.last(), Some(&2));
     /// ```
-    pub fn last<Q>(&self) -> Option<&Q>
+    pub fn max<Q>(&self) -> Option<&Q>
     where
         T: Ord + Borrow<Q>,
         Q: Ord + ?Sized,

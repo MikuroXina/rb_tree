@@ -93,12 +93,12 @@ impl<T> RbTreeSet<T> {
     where
         T: Ord,
     {
-        let (self_min, self_max) = if let Some(pair) = self.first().zip(self.last()) {
+        let (self_min, self_max) = if let Some(pair) = self.min().zip(self.max()) {
             pair
         } else {
             return Difference(DifferenceInner::Through(self.iter()));
         };
-        let (other_min, other_max) = if let Some(pair) = other.first().zip(other.last()) {
+        let (other_min, other_max) = if let Some(pair) = other.min().zip(other.max()) {
             pair
         } else {
             return Difference(DifferenceInner::Through(self.iter()));
@@ -179,12 +179,12 @@ impl<T> RbTreeSet<T> {
     where
         T: Ord,
     {
-        let (self_min, self_max) = if let Some(pair) = self.first().zip(self.last()) {
+        let (self_min, self_max) = if let Some(pair) = self.min().zip(self.max()) {
             pair
         } else {
             return Intersection(IntersectionInner::AtLeast(None));
         };
-        let (other_min, other_max) = if let Some(pair) = other.first().zip(other.last()) {
+        let (other_min, other_max) = if let Some(pair) = other.min().zip(other.max()) {
             pair
         } else {
             return Intersection(IntersectionInner::AtLeast(None));
@@ -285,12 +285,12 @@ impl<T> RbTreeSet<T> {
         if other.len() < self.len() {
             return false;
         }
-        let (self_min, self_max) = if let Some(pair) = self.first().zip(self.last()) {
+        let (self_min, self_max) = if let Some(pair) = self.min().zip(self.max()) {
             pair
         } else {
             return true; // self is empty
         };
-        let (other_min, other_max) = if let Some(pair) = other.first().zip(other.last()) {
+        let (other_min, other_max) = if let Some(pair) = other.min().zip(other.max()) {
             pair
         } else {
             return false; // other is empty
