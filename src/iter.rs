@@ -94,7 +94,7 @@ impl<K, V> IntoIterator for RedBlackTree<K, V> {
     type IntoIter = IntoIter<K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let length = self.len;
+        let length = self.root.len();
         IntoIter {
             range: DyingLeafRange::new(self),
             length,

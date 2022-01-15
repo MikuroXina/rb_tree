@@ -13,13 +13,14 @@ pub struct DyingLeafRange<K, V> {
 
 impl<K, V> DyingLeafRange<K, V> {
     pub fn new(tree: RedBlackTree<K, V>) -> Self {
-        let start = tree.root.map(|r| r.first_node());
-        let end = tree.root.map(|r| r.last_node());
+        let start = tree.root.inner().map(|r| r.min_child());
+        let end = tree.root.inner().map(|r| r.max_child());
         std::mem::forget(tree);
         Self { start, end }
     }
 
     pub fn cut_left(&mut self) -> Option<(K, V)> {
+        // FIXME: fix with PreviousStep
         let start = self.start?;
         let next = start.right().or_else(|| start.parent());
         // Safety: The dying reference is deallocated.
@@ -27,6 +28,7 @@ impl<K, V> DyingLeafRange<K, V> {
     }
 
     pub fn cut_right(&mut self) -> Option<(K, V)> {
+        // FIXME: fix with PreviousStep
         let end = self.end?;
         let next = end.left().or_else(|| end.parent());
         // Safety: The dying reference is deallocated.
@@ -54,12 +56,13 @@ impl<K, V> RefLeafRange<K, V> {
         Q: Ord + ?Sized,
         R: ops::RangeBounds<Q>,
     {
-        let (start, end) =
-            if let Some((start, end)) = tree.root.and_then(|root| search_range(root, range)) {
-                (Some(start), Some(end))
-            } else {
-                (None, None)
-            };
+        let (start, end) = if let Some((start, end)) =
+            tree.root.inner().and_then(|root| search_range(root, range))
+        {
+            (Some(start), Some(end))
+        } else {
+            (None, None)
+        };
         Self {
             start,
             start_prev: PreviousStep::LeftChild,

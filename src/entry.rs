@@ -1,4 +1,4 @@
-use crate::{node::NodeRef, RedBlackTree};
+use crate::RedBlackTree;
 
 impl<K: Ord, V> RedBlackTree<K, V> {
     /// Gets the given key's corresponding entry in the map for in-place manipulation.
@@ -53,15 +53,12 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     pub fn or_insert(self, default: V) -> &'a mut V {
         // Safety: The return value will not live longer than `tree`.
         unsafe {
-            if self.tree.root.is_none() {
-                let root = NodeRef::new(self.key, default);
-                self.tree.root = Some(root);
-                self.tree.len += 1;
-                root.value_mut()
-            } else if let Err(target) = self.tree.root.unwrap().search(&self.key) {
-                let node = NodeRef::new(self.key, default);
-                node.insert_node(target, &mut self.tree.root);
-                node.value_mut()
+            if self.tree.is_empty() || self.tree.root.search(&self.key).transpose().is_err() {
+                self.tree
+                    .root
+                    .insert_node(self.key, default)
+                    .unwrap_unchecked()
+                    .value_mut()
             } else {
                 self.tree.get_mut(&self.key).unwrap()
             }
@@ -103,16 +100,13 @@ impl<'a, K: Ord, V> Entry<'a, K, V> {
     pub fn or_insert_with_key<F: FnOnce(&K) -> V>(self, default: F) -> &'a mut V {
         // Safety: The return value will not live longer than `tree`.
         unsafe {
-            if self.tree.root.is_none() {
-                let default = default(&self.key);
-                let root = NodeRef::new(self.key, default);
-                self.tree.root = Some(root);
-                root.value_mut()
-            } else if let Err(target) = self.tree.root.unwrap().search(&self.key) {
-                let default = default(&self.key);
-                let node = NodeRef::new(self.key, default);
-                node.insert_node(target, &mut self.tree.root);
-                node.value_mut()
+            if self.tree.is_empty() || self.tree.root.search(&self.key).transpose().is_err() {
+                let value = default(&self.key);
+                self.tree
+                    .root
+                    .insert_node(self.key, value)
+                    .unwrap_unchecked()
+                    .value_mut()
             } else {
                 self.tree.get_mut(&self.key).unwrap()
             }

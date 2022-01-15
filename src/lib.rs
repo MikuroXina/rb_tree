@@ -6,14 +6,12 @@ mod node;
 #[cfg(test)]
 mod tests;
 
-use node::{Node, NodeRef};
+use node::Root;
 
-use std::{borrow::Borrow, fmt, hash, marker::PhantomData, ops};
+use std::{borrow::Borrow, fmt, hash, ops};
 
 pub struct RedBlackTree<K, V> {
-    root: Option<NodeRef<K, V>>,
-    len: usize,
-    _phantom: PhantomData<Box<Node<K, V>>>,
+    root: Root<K, V>,
 }
 
 impl<K, V> Drop for RedBlackTree<K, V> {
@@ -63,7 +61,7 @@ impl<'a, K: Ord + Copy + 'a, V: Copy + 'a> Extend<(&'a K, &'a V)> for RedBlackTr
 
 impl<K: hash::Hash + Ord, V: hash::Hash> hash::Hash for RedBlackTree<K, V> {
     fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        self.len.hash(state);
+        self.root.len().hash(state);
         self.iter().for_each(|e| e.hash(state));
     }
 }
@@ -92,7 +90,7 @@ where
 
 impl<K: Ord, V: PartialEq> PartialEq for RedBlackTree<K, V> {
     fn eq(&self, other: &Self) -> bool {
-        self.len == other.len && self.iter().zip(other.iter()).all(|(a, b)| a == b)
+        self.root.len() == other.root.len() && self.iter().zip(other.iter()).all(|(a, b)| a == b)
     }
 }
 
@@ -124,11 +122,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub const fn new() -> Self {
-        Self {
-            root: None,
-            len: 0,
-            _phantom: PhantomData,
-        }
+        Self { root: Root::new() }
     }
 
     /// Removes all elements from the map.
@@ -162,7 +156,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub const fn is_empty(&self) -> bool {
-        self.root.is_none()
+        self.root.is_empty()
     }
 
     /// Returns the number of elements in the map.
@@ -179,7 +173,7 @@ impl<K, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub const fn len(&self) -> usize {
-        self.len
+        self.root.len()
     }
 }
 
@@ -247,25 +241,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub fn insert(&mut self, key: K, value: V) -> Option<(K, V)> {
-        if self.is_empty() {
-            self.root = Some(NodeRef::new(key, value));
-            self.len += 1;
-            return None;
-        }
-        match self.root.unwrap().search(&key) {
-            Ok(found) => {
-                // only replace the value
-                // Safety: The mutable reference is temporary.
-                let old_v = std::mem::replace(unsafe { found.value_mut() }, value);
-                Some((key, old_v))
-            }
-            Err(target) => {
-                let new_node = NodeRef::new(key, value);
-                new_node.insert_node(target, &mut self.root);
-                self.len += 1;
-                None
-            }
-        }
+        self.root.insert_node(key, value).err()
     }
 
     /// Removes a key from the map, returning the old value if the key was in.
@@ -303,10 +279,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        let found = self.root?.search(key).ok()?;
-        self.len -= 1;
-        let ret = found.remove_node(&mut self.root);
-        Some(ret)
+        self.root.remove_node(key)
     }
 
     /// Returns a reference to the value corresponding to the key.
@@ -350,8 +323,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        self.root?
-            .search(key)
+        self.root
+            .search(key)?
             .ok()
             .map(|n| unsafe { n.value_mut() })
     }
@@ -374,8 +347,8 @@ impl<K: Ord, V> RedBlackTree<K, V> {
         K: Borrow<Q>,
         Q: Ord + ?Sized,
     {
-        self.root?
-            .search(key)
+        self.root
+            .search(key)?
             .ok()
             .map(|n| unsafe { n.key_value() })
     }

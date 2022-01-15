@@ -1,6 +1,6 @@
 use super::PreviousStep;
 use crate::{
-    node::{ChildIndex, NodeRef},
+    node::{ChildIndex, NodeRef, Root},
     RedBlackTree,
 };
 
@@ -29,14 +29,12 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub fn drain_filter<F: FnMut(&K, &mut V) -> bool>(&mut self, f: F) -> DrainFilter<K, V, F> {
-        let current = self.root.map(|r| r.first_node());
         // remove root for guarantee memory safety, forgetting the drain.
-        let root = self.root.take();
-        let len = std::mem::replace(&mut self.len, 0);
+        let root = std::mem::take(&mut self.root);
+        let current = root.inner().map(|r| r.min_child());
         DrainFilter {
             tree: self,
             root,
-            len,
             current,
             prev: PreviousStep::LeftChild,
             pred: f,
@@ -47,8 +45,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
 
 pub struct DrainFilter<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> {
     tree: &'a mut RedBlackTree<K, V>,
-    root: Option<NodeRef<K, V>>,
-    len: usize,
+    root: Root<K, V>,
     current: Option<NodeRef<K, V>>,
     prev: PreviousStep,
     pred: F,
@@ -59,8 +56,7 @@ impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> Drop for DrainFilter<'_, K, V, F> 
     fn drop(&mut self) {
         self.for_each(drop);
         // bring back root
-        self.tree.root = self.root;
-        self.tree.len = self.len;
+        self.tree.root = std::mem::take(&mut self.root);
     }
 }
 
@@ -112,9 +108,8 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                     // Safety: The mutable reference will not live longer than `pred`.
                     let (k, v) = unsafe { curr.key_value_mut() };
                     if (self.pred)(k, v) {
-                        self.len -= 1;
                         self.prev = PreviousStep::Parent;
-                        return Some(curr.remove_node(&mut self.root));
+                        return self.root.remove_node(k);
                     }
                 }
                 PreviousStep::RightChild => {
@@ -130,7 +125,7 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.len))
+        (0, Some(self.root.len()))
     }
 }
 
