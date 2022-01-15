@@ -137,6 +137,27 @@ impl<T> RbTreeSet<T> {
         self.map.insert(value, ()).is_none()
     }
 
+    /// Adds a value to the set, replacing the existing value, if any, that is equal to the given one. Returns the replaced value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set = RbTreeSet::new();
+    /// set.insert(Vec::<i32>::new());
+    ///
+    /// assert_eq!(set.get(&[][..]).unwrap().capacity(), 0);
+    /// set.replace(Vec::with_capacity(10));
+    /// assert_eq!(set.get(&[][..]).unwrap().capacity(), 10);
+    /// ```
+    pub fn replace(&mut self, value: T) -> Option<T>
+    where
+        T: Ord,
+    {
+        self.map.insert(value, ()).map(|(k, _)| k)
+    }
+
     /// Clears the set, removing all values.
     ///
     /// # Examples
