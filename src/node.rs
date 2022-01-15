@@ -140,20 +140,20 @@ impl<K, V> Root<K, V> {
         self.len -= 1;
 
         if Some(to_remove) == self.root && to_remove.children() == (None, None) {
-            // Safety: There is only `node` in the tree, so just deallocate it.
+            // Safety: There is only `to_remove` in the tree, so just deallocate it.
             unsafe {
                 self.root = None;
                 return Some(to_remove.deallocate());
             }
         }
-        // `node` is not the root, has its parent.
+        // `to_remove` is not the root, has its parent.
         if let (Some(left), Some(right)) = to_remove.children() {
-            // `node` is needed to replace with the maximum node in the left.
+            // `to_remove` is needed to replace with the maximum node in the left.
             let max_in_left = left.max_child();
-            // Safety: The color, parent and children of `node` is replaced with `max_in_left`. Then `node` has only one child.
+            let redundant = max_in_left.left();
             //  parent
             //    |
-            //   node
+            //   to_remove
             //   /  \
             // left right
             // /  \
@@ -171,19 +171,19 @@ impl<K, V> Root<K, V> {
             //  /  \
             //     ...
             //       \
-            //      node
+            //      to_remove
             //       /
             //     ...
             unsafe {
-                let (idx, parent) = to_remove.index_and_parent().unwrap();
-                let node_color = to_remove.color();
-                to_remove.set_child(ChildIndex::Right, None);
-                to_remove.set_child(ChildIndex::Left, max_in_left.left());
-                to_remove.set_color(max_in_left.color());
+                let (idx, parent) = max_in_left.index_and_parent().unwrap();
+                parent.set_child(idx, redundant);
+                if let Some((idx, parent)) = to_remove.index_and_parent() {
+                    parent.set_child(idx, max_in_left);
+                } else {
+                    self.root = Some(max_in_left);
+                }
                 max_in_left.set_child(ChildIndex::Left, left);
                 max_in_left.set_child(ChildIndex::Right, right);
-                max_in_left.set_color(node_color);
-                parent.set_child(idx, max_in_left);
             }
         }
 
@@ -198,15 +198,15 @@ impl<K, V> Root<K, V> {
             }
         }
 
-        // `node` is black, has its parent, and has its one child at least.
+        // `to_remove` is black, has its parent, and has its one child at least.
         if let Some(red_child) = to_remove.left().or_else(|| to_remove.right()) {
             debug_assert!(red_child.is_red());
             debug_assert!(red_child.left().is_none());
             debug_assert!(red_child.right().is_none());
-            // Safety: If `node` has red child, the child can be colored as black and replaced with `node`.
+            // Safety: If `to_remove` has red child, the child can be colored as black and replaced with `to_remove`.
             //    parent
             //      |
-            //    node
+            //    to_remove
             //      |
             // (red_child)
             // ↓
@@ -222,11 +222,11 @@ impl<K, V> Root<K, V> {
                 red_child.set_color(Color::Black);
             }
         } else {
-            // `node` is not the root, black, and has no children.
+            // `to_remove` is not the root, black, and has no children.
             to_remove.balance_after_remove(&mut self.root);
         }
 
-        // Safety: `node` was removed from the tree.
+        // Safety: `to_remove` was removed from the tree.
         Some(unsafe { to_remove.deallocate() })
     }
 }
