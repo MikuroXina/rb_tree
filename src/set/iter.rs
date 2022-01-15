@@ -469,8 +469,8 @@ impl<'a, T: Ord + 'a> Iterator for Intersection<'a, T> {
                 loop {
                     match a_next.cmp(b_next) {
                         Less => a_next = a.next()?,
-                        Equal => b_next = b.next()?,
-                        Greater => return Some(a_next),
+                        Equal => return Some(a_next),
+                        Greater => b_next = b.next()?,
                     }
                 }
             }
