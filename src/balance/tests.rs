@@ -663,7 +663,7 @@ fn simple_remove() {
         let node5 = node5.expect("node5 must exist");
 
         assert_eq!(node3.key(), &3);
-        assert!(node3.is_red());
+        assert!(node3.is_black());
 
         assert_eq!(node5.key(), &5);
         assert!(node5.is_black());
