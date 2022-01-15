@@ -112,8 +112,9 @@ impl<K, V> Root<K, V> {
             Ok(found) => {
                 // only replace the value
                 // Safety: The mutable reference is temporary.
+                let old_k = found.replace_key(key);
                 let old_v = std::mem::replace(unsafe { found.value_mut() }, value);
-                Err((key, old_v))
+                Err((old_k, old_v))
             }
             Err((target, idx)) => {
                 let new_node = NodeRef::new(key, value);
@@ -325,6 +326,11 @@ impl<K, V> NodeRef<K, V> {
     {
         // Safety: The mutable reference of the key will not exist.
         unsafe { self.0.as_ref() }.key.borrow()
+    }
+
+    /// Replaces the key and returns the old value.
+    pub fn replace_key(mut self, key: K) -> K {
+        std::mem::replace(&mut unsafe { self.0.as_mut() }.key, key)
     }
 
     /// Returns the reference of key-value pair from the node.
