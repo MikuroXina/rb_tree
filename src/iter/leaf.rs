@@ -13,8 +13,8 @@ pub struct DyingLeafRange<K, V> {
 
 impl<K, V> DyingLeafRange<K, V> {
     pub fn new(tree: RedBlackTree<K, V>) -> Self {
-        let start = tree.root.and_then(|r| r.first_node());
-        let end = tree.root.and_then(|r| r.last_node());
+        let start = tree.root.map(|r| r.first_node());
+        let end = tree.root.map(|r| r.last_node());
         std::mem::forget(tree);
         Self { start, end }
     }
