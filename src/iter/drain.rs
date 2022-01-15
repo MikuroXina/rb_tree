@@ -38,6 +38,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
             current,
             prev: PreviousStep::LeftChild,
             pred: f,
+            to_remove_keys: vec![],
             _phantom: PhantomData,
         }
     }
@@ -49,12 +50,17 @@ pub struct DrainFilter<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> {
     current: Option<NodeRef<K, V>>,
     prev: PreviousStep,
     pred: F,
+    to_remove_keys: Vec<&'a K>,
     _phantom: PhantomData<(K, V)>,
 }
 
 impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> Drop for DrainFilter<'_, K, V, F> {
     fn drop(&mut self) {
         self.for_each(drop);
+        for to_remove in &self.to_remove_keys {
+            // needed to forget because the node will be dropped outside.
+            std::mem::forget(self.root.remove_node(*to_remove));
+        }
         // bring back root
         self.tree.root = std::mem::take(&mut self.root);
     }
@@ -97,18 +103,15 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                         self.prev = PreviousStep::Parent;
                         self.current = Some(right);
                     } else {
-                        // ascended from right, so ascend again
-                        self.prev = if let Some(ChildIndex::Left) = curr.index_on_parent() {
-                            PreviousStep::LeftChild
-                        } else {
-                            PreviousStep::RightChild
-                        };
-                        self.current = curr.parent();
+                        self.prev = PreviousStep::RightChild;
                     }
                     // Safety: The mutable reference will not live longer than `pred`.
-                    let (k, v) = unsafe { curr.key_value_mut() };
-                    if (self.pred)(k, v) {
-                        return self.root.remove_node(k);
+                    unsafe {
+                        let (k, v) = curr.key_value_mut();
+                        if (self.pred)(k, v) {
+                            self.to_remove_keys.push(k);
+                            return Some((std::ptr::read(k), std::ptr::read(v)));
+                        }
                     }
                 }
                 PreviousStep::RightChild => {

@@ -383,7 +383,7 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     ///
     /// let mut map: RedBlackTree<i32, i32> = (0..8).map(|x| (x, x * 10)).collect();
     /// map.retain(|&k, _| k % 2 == 0);
-    /// assert!(map.into_iter().eq(vec![(0, 0), (2, 20), (4, 40), (6, 60)]));
+    /// assert_eq!(map.into_iter().collect::<Vec<_>>(), vec![(0, 0), (2, 20), (4, 40), (6, 60)]);
     /// ```
     #[inline]
     pub fn retain<F: FnMut(&K, &mut V) -> bool>(&mut self, mut f: F) {
