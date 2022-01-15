@@ -385,10 +385,35 @@ impl<K: Ord, V> RbTreeMap<K, V> {
         self.drain_filter(move |k, v| !f(k, v));
     }
 
+    /// Returns the first key-value pair in the map. The key in this pair is the minimum key in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeMap;
+    ///
+    /// let mut map = RbTreeMap::new();
+    /// assert_eq!(map.first(), None);
+    /// map.insert(1, "b");
+    /// map.insert(2, "a");
+    /// assert_eq!(map.first(), Some((&1, &"b")));
+    /// ```
     pub fn first(&self) -> Option<(&K, &V)> {
         Some(unsafe { self.root.inner()?.min_child().key_value() })
     }
 
+    /// Returns the last key-value pair in the map. The key in this pair is the maximum key in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeMap;
+    ///
+    /// let mut map = RbTreeMap::new();
+    /// map.insert(1, "b");
+    /// map.insert(2, "a");
+    /// assert_eq!(map.last(), Some((&2, &"a")));
+    /// ```
     pub fn last(&self) -> Option<(&K, &V)> {
         Some(unsafe { self.root.inner()?.max_child().key_value() })
     }
@@ -401,10 +426,44 @@ impl<K: Ord, V> RbTreeMap<K, V> {
         Some(unsafe { self.root.inner()?.max_child().key_value_mut() })
     }
 
+    /// Removes and returns the first element in the map. The key of this element is the minimum key that was in the map.
+    ///
+    /// # Examples
+    ///
+    /// Draining elements in ascending order, while keeping a usable map each iteration.
+    ///
+    /// ```
+    /// use rb_tree::RbTreeMap;
+    ///
+    /// let mut map = RbTreeMap::new();
+    /// map.insert(1, "a");
+    /// map.insert(2, "b");
+    /// while let Some((key, _val)) = map.pop_first() {
+    ///     assert!(map.iter().all(|(k, _v)| *k > key));
+    /// }
+    /// assert!(map.is_empty());
+    /// ```
     pub fn pop_first(&mut self) -> Option<(K, V)> {
         self.root.remove_min()
     }
 
+    /// Removes and returns the last element in the map. The key of this element is the maximum key that was in the map.
+    ///
+    /// # Examples
+    ///
+    /// Draining elements in descending order, while keeping a usable map each iteration.
+    ///
+    /// ```
+    /// use rb_tree::RbTreeMap;
+    ///
+    /// let mut map = RbTreeMap::new();
+    /// map.insert(1, "a");
+    /// map.insert(2, "b");
+    /// while let Some((key, _val)) = map.pop_last() {
+    ///     assert!(map.iter().all(|(k, _v)| *k < key));
+    /// }
+    /// assert!(map.is_empty());
+    /// ```
     pub fn pop_last(&mut self) -> Option<(K, V)> {
         self.root.remove_max()
     }
