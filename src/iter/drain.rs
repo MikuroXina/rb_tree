@@ -4,7 +4,7 @@ use crate::{
     RedBlackTree,
 };
 
-use std::{fmt, iter::FusedIterator};
+use std::{fmt, iter::FusedIterator, marker::PhantomData};
 
 impl<K: Ord, V> RedBlackTree<K, V> {
     /// Creates an iterator that visits all elements (key-value pairs) in ascending key order and uses a closure to determine if an element should be removed. If the closure returns true, the element is removed from the map and yielded. If the closure returns false, or panics, the element remains in the map and will not be yielded.
@@ -29,27 +29,38 @@ impl<K: Ord, V> RedBlackTree<K, V> {
     /// ```
     #[inline]
     pub fn drain_filter<F: FnMut(&K, &mut V) -> bool>(&mut self, f: F) -> DrainFilter<K, V, F> {
-        // FIXME: to guarantee memory safety
         let current = self.root.map(|r| r.first_node());
+        // remove root for guarantee memory safety, forgetting the drain.
+        let root = self.root.take();
+        let len = std::mem::replace(&mut self.len, 0);
         DrainFilter {
             tree: self,
+            root,
+            len,
             current,
             prev: PreviousStep::LeftChild,
             pred: f,
+            _phantom: PhantomData,
         }
     }
 }
 
 pub struct DrainFilter<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> {
     tree: &'a mut RedBlackTree<K, V>,
+    root: Option<NodeRef<K, V>>,
+    len: usize,
     current: Option<NodeRef<K, V>>,
     prev: PreviousStep,
     pred: F,
+    _phantom: PhantomData<(K, V)>,
 }
 
 impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> Drop for DrainFilter<'_, K, V, F> {
     fn drop(&mut self) {
         self.for_each(drop);
+        // bring back root
+        self.tree.root = self.root;
+        self.tree.len = self.len;
     }
 }
 
@@ -101,8 +112,9 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                     // Safety: The mutable reference will not live longer than `pred`.
                     let (k, v) = unsafe { curr.key_value_mut() };
                     if (self.pred)(k, v) {
+                        self.len -= 1;
                         self.prev = PreviousStep::Parent;
-                        return self.tree.remove_entry(k);
+                        return Some(curr.remove_node(&mut self.root));
                     }
                 }
                 PreviousStep::RightChild => {
@@ -118,7 +130,7 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.tree.len()))
+        (0, Some(self.len))
     }
 }
 
