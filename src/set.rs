@@ -202,6 +202,64 @@ impl<T> RbTreeSet<T> {
         self.map.remove_entry(value).map(|(k, _)| k)
     }
 
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// In other words, remove all elements `e` such that `f(&e)` returns `false`. The elements are visited in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let xs = [1, 2, 3, 4, 5, 6];
+    /// let mut set: RbTreeSet<i32> = xs.iter().cloned().collect();
+    /// // Keep only the even numbers.
+    /// set.retain(|&k| k % 2 == 0);
+    /// assert!(set.iter().eq([2, 4, 6].iter()));
+    /// ```
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        T: Ord,
+        F: FnMut(&T) -> bool,
+    {
+        self.drain_filter(|item| !f(item));
+    }
+
+    /// Moves all elements from other into Self, leaving other empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut a = RbTreeSet::new();
+    /// a.insert(1);
+    /// a.insert(2);
+    /// a.insert(3);
+    ///
+    /// let mut b = RbTreeSet::new();
+    /// b.insert(3);
+    /// b.insert(4);
+    /// b.insert(5);
+    ///
+    /// a.append(&mut b);
+    ///
+    /// assert_eq!(a.len(), 5);
+    /// assert_eq!(b.len(), 0);
+    ///
+    /// assert!(a.contains(&1));
+    /// assert!(a.contains(&2));
+    /// assert!(a.contains(&3));
+    /// assert!(a.contains(&4));
+    /// assert!(a.contains(&5));
+    /// ```
+    pub fn append(&mut self, other: &mut Self)
+    where
+        T: Ord,
+    {
+        self.map.append(&mut other.map);
+    }
+
     /// Clears the set, removing all values.
     ///
     /// # Examples
