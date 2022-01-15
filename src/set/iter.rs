@@ -12,6 +12,33 @@ use std::{
 const ITER_PERFORMANCE_TIPPING_SIZE_DIFF: usize = 16;
 
 impl<T> RbTreeSet<T> {
+    /// Gets an iterator that visits the values in the BTreeSet in ascending order.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let set: RbTreeSet<usize> = [1, 2, 3].iter().cloned().collect();
+    /// let mut set_iter = set.iter();
+    /// assert_eq!(set_iter.next(), Some(&1));
+    /// assert_eq!(set_iter.next(), Some(&2));
+    /// assert_eq!(set_iter.next(), Some(&3));
+    /// assert_eq!(set_iter.next(), None);
+    /// ```
+    ///
+    /// Values returned by the iterator are returned in ascending order:
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let set: RbTreeSet<usize> = [3, 1, 2].iter().cloned().collect();
+    /// let mut set_iter = set.iter();
+    /// assert_eq!(set_iter.next(), Some(&1));
+    /// assert_eq!(set_iter.next(), Some(&2));
+    /// assert_eq!(set_iter.next(), Some(&3));
+    /// assert_eq!(set_iter.next(), None);
+    /// ```
     pub fn iter(&self) -> Iter<T> {
         Iter(self.map.keys())
     }
