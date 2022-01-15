@@ -108,7 +108,6 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                     // Safety: The mutable reference will not live longer than `pred`.
                     let (k, v) = unsafe { curr.key_value_mut() };
                     if (self.pred)(k, v) {
-                        self.prev = PreviousStep::Parent;
                         return self.root.remove_node(k);
                     }
                 }
