@@ -29,40 +29,23 @@ impl<K: Ord, V> RbTreeMap<K, V> {
     /// ```
     #[inline]
     pub fn drain_filter<F: FnMut(&K, &mut V) -> bool>(&mut self, f: F) -> DrainFilter<K, V, F> {
-        // remove root for guarantee memory safety, forgetting the drain.
-        let root = std::mem::take(&mut self.root);
-        let current = root.inner().map(|r| r.min_child());
         DrainFilter {
-            tree: self,
-            root,
-            current,
-            prev: PreviousStep::LeftChild,
             pred: f,
-            to_remove_keys: vec![],
-            _phantom: PhantomData,
+            nav: DrainFilterNavigator::new(self),
         }
     }
 }
 
 pub struct DrainFilter<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> {
-    tree: &'a mut RbTreeMap<K, V>,
-    root: Root<K, V>,
-    current: Option<NodeRef<K, V>>,
-    prev: PreviousStep,
     pred: F,
-    to_remove_keys: Vec<&'a K>,
-    _phantom: PhantomData<(K, V)>,
+    nav: DrainFilterNavigator<'a, K, V>,
 }
 
 impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> Drop for DrainFilter<'_, K, V, F> {
     fn drop(&mut self) {
-        self.for_each(drop);
-        for to_remove in &self.to_remove_keys {
-            // needed to forget because the node will be dropped outside.
-            std::mem::forget(self.root.remove_node(*to_remove));
+        unsafe {
+            self.nav.drop_nav(&mut self.pred);
         }
-        // bring back root
-        self.tree.root = std::mem::take(&mut self.root);
     }
 }
 
@@ -70,14 +53,9 @@ impl<K: fmt::Debug + Ord, V: fmt::Debug, F: FnMut(&K, &mut V) -> bool> fmt::Debu
     for DrainFilter<'_, K, V, F>
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_tuple("DrainFilter").field(&self.peek()).finish()
-    }
-}
-
-impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> DrainFilter<'a, K, V, F> {
-    fn peek(&self) -> Option<(&K, &V)> {
-        // Safety: The reference will not live longer than `&self`.
-        self.current.map(|n| unsafe { n.key_value() })
+        f.debug_tuple("DrainFilter")
+            .field(&self.nav.peek())
+            .finish()
     }
 }
 
@@ -85,6 +63,48 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
     type Item = (K, V);
 
     fn next(&mut self) -> Option<Self::Item> {
+        self.nav.next(&mut self.pred)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.nav.size_hint()
+    }
+}
+
+impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> FusedIterator for DrainFilter<'_, K, V, F> {}
+
+pub(crate) struct DrainFilterNavigator<'a, K: 'a, V: 'a> {
+    tree: &'a mut RbTreeMap<K, V>,
+    root: Root<K, V>,
+    current: Option<NodeRef<K, V>>,
+    prev: PreviousStep,
+    to_remove_keys: Vec<&'a K>,
+    _phantom: PhantomData<(K, V)>,
+}
+
+impl<'a, K: 'a, V: 'a> DrainFilterNavigator<'a, K, V> {
+    pub(crate) fn new(tree: &'a mut RbTreeMap<K, V>) -> Self {
+        // remove root for guarantee memory safety, forgetting the drain.
+        let root = std::mem::take(&mut tree.root);
+        let current = root.inner().map(|r| r.min_child());
+        Self {
+            tree,
+            root,
+            current,
+            prev: PreviousStep::LeftChild,
+            to_remove_keys: vec![],
+            _phantom: PhantomData,
+        }
+    }
+
+    pub(crate) fn peek(&self) -> Option<(&K, &V)> {
+        self.current.map(|curr| unsafe { curr.key_value() })
+    }
+
+    pub(crate) fn next<F>(&mut self, pred: &mut F) -> Option<(K, V)>
+    where
+        F: FnMut(&K, &mut V) -> bool,
+    {
         while let Some(curr) = self.current {
             match self.prev {
                 PreviousStep::Parent => {
@@ -108,7 +128,7 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
                     // Safety: The mutable reference will not live longer than `pred`.
                     unsafe {
                         let (k, v) = curr.key_value_mut();
-                        if (self.pred)(k, v) {
+                        if (pred)(k, v) {
                             self.to_remove_keys.push(k);
                             return Some((std::ptr::read(k), std::ptr::read(v)));
                         }
@@ -126,9 +146,22 @@ impl<'a, K: Ord, V, F: FnMut(&K, &mut V) -> bool> Iterator for DrainFilter<'a, K
         None
     }
 
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.root.len()))
+    pub(crate) fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.root.len() - self.to_remove_keys.len()))
+    }
+
+    pub(crate) unsafe fn drop_nav<F>(&mut self, pred: &mut F)
+    where
+        K: Ord,
+        F: FnMut(&K, &mut V) -> bool,
+    {
+        while self.next(pred).is_some() {}
+
+        for to_remove in &self.to_remove_keys {
+            // needed to forget because the node will be dropped outside.
+            std::mem::forget(self.root.remove_node(*to_remove));
+        }
+        // bring back root
+        self.tree.root = std::mem::take(&mut self.root);
     }
 }
-
-impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> FusedIterator for DrainFilter<'_, K, V, F> {}
