@@ -6,6 +6,7 @@ use crate::RbTreeMap;
 use std::{borrow::Borrow, fmt};
 
 /// A set based on a red-black tree.
+#[derive(Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RbTreeSet<T> {
     map: RbTreeMap<T, ()>,
 }
