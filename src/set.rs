@@ -153,6 +153,20 @@ impl<T> RbTreeSet<T> {
         self.map.clear();
     }
 
+    /// Returns a reference to the first value in the set, if any. This value is always the minimum of all values in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set = RbTreeSet::new();
+    /// assert_eq!(set.first(), None);
+    /// set.insert(1);
+    /// assert_eq!(set.first(), Some(&1));
+    /// set.insert(2);
+    /// assert_eq!(set.first(), Some(&1));
+    /// ```
     pub fn first<Q>(&self) -> Option<&Q>
     where
         T: Ord + Borrow<Q>,
@@ -165,6 +179,20 @@ impl<T> RbTreeSet<T> {
             .map(|n| n.key())
     }
 
+    /// Returns a reference to the last value in the set, if any. This value is always the maximum of all values in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut set = RbTreeSet::new();
+    /// assert_eq!(set.last(), None);
+    /// set.insert(1);
+    /// assert_eq!(set.last(), Some(&1));
+    /// set.insert(2);
+    /// assert_eq!(set.last(), Some(&2));
+    /// ```
     pub fn last<Q>(&self) -> Option<&Q>
     where
         T: Ord + Borrow<Q>,
