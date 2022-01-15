@@ -330,6 +330,7 @@ impl<K, V> NodeRef<K, V> {
 
     pub fn remove_node(self, root: &mut Option<Self>) -> (K, V) {
         if self.parent().is_none() {
+            debug_assert_eq!(Some(self), *root);
             // Safety: There is only `node` in the tree, so just deallocate it.
             unsafe {
                 *root = None;
