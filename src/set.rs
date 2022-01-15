@@ -90,6 +90,29 @@ impl<T> RbTreeSet<T> {
         self.map.contains_key(value)
     }
 
+    /// Returns a reference to the value in the set, if any, that is equal to the given value.
+    ///
+    /// The value may be any borrowed form of the set's value type,
+    /// but the ordering on the borrowed form *must* match the
+    /// ordering on the value type.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let set: RbTreeSet<_> = [1, 2, 3].iter().cloned().collect();
+    /// assert_eq!(set.get(&2), Some(&2));
+    /// assert_eq!(set.get(&4), None);
+    /// ```
+    pub fn get<Q>(&self, value: &Q) -> Option<&T>
+    where
+        T: Ord + Borrow<Q>,
+        Q: Ord + ?Sized,
+    {
+        self.map.get_key_value(value).map(|(k, _)| k)
+    }
+
     /// Adds a value to the set.
     ///
     /// If the set did not have this value present, true is returned.
@@ -112,6 +135,22 @@ impl<T> RbTreeSet<T> {
         T: Ord,
     {
         self.map.insert(value, ()).is_none()
+    }
+
+    /// Clears the set, removing all values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rb_tree::RbTreeSet;
+    ///
+    /// let mut v = RbTreeSet::new();
+    /// v.insert(1);
+    /// v.clear();
+    /// assert!(v.is_empty());
+    /// ```
+    pub fn clear(&mut self) {
+        self.map.clear();
     }
 }
 
