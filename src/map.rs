@@ -1,3 +1,4 @@
+pub mod entry;
 pub mod iter;
 
 use crate::node::Root;

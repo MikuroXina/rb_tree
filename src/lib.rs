@@ -1,5 +1,4 @@
 mod balance;
-pub mod entry;
 pub mod map;
 mod mem;
 mod node;
