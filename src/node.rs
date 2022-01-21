@@ -278,6 +278,9 @@ impl<K, V> PartialEq for Node<K, V> {
 
 impl<K, V> Eq for Node<K, V> {}
 
+unsafe impl<K: Sync, V: Sync> Sync for Node<K, V> {}
+unsafe impl<K: Send, V: Send> Send for Node<K, V> {}
+
 impl<K, V> Node<K, V> {
     /// Constructs a new node of red-black tree with key and value. The node must be freed with [`deallocate`] after use.
     pub fn new(key: K, value: V) -> Self {
