@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests;
 
-use crate::node::{ChildIndex, Color, NodeRef};
+use crate::node::{ChildIndex, Color, Node};
 
-impl<K, V> NodeRef<K, V> {
-    pub(crate) fn rotate(self, pivot_idx: ChildIndex, root: &mut Option<Self>) -> NodeRef<K, V> {
+impl<K, V> Node<K, V> {
+    pub(crate) fn rotate(self, pivot_idx: ChildIndex, root: &mut Option<Self>) -> Node<K, V> {
         //           [target]
         //            /   \
         //        [pivot] [be_fallen]

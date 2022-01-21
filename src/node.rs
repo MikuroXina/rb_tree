@@ -33,17 +33,17 @@ impl std::ops::Not for ChildIndex {
     }
 }
 
-pub struct Node<K, V> {
-    parent: Option<NodeRef<K, V>>,
+pub struct InnerNode<K, V> {
+    parent: Option<Node<K, V>>,
     #[allow(clippy::type_complexity)]
-    children: (Option<NodeRef<K, V>>, Option<NodeRef<K, V>>),
+    children: (Option<Node<K, V>>, Option<Node<K, V>>),
     color: Color,
     key: K,
     value: V,
 }
 
 pub struct Root<K, V> {
-    root: Option<NodeRef<K, V>>,
+    root: Option<Node<K, V>>,
     len: usize,
     _phantom: PhantomData<(K, V)>,
 }
@@ -84,12 +84,12 @@ impl<K, V> Root<K, V> {
         self.root.is_none()
     }
 
-    pub const fn inner(&self) -> Option<NodeRef<K, V>> {
+    pub const fn inner(&self) -> Option<Node<K, V>> {
         self.root
     }
 
     #[allow(clippy::type_complexity)]
-    pub fn search<Q>(&self, key: &Q) -> Option<Result<NodeRef<K, V>, (NodeRef<K, V>, ChildIndex)>>
+    pub fn search<Q>(&self, key: &Q) -> Option<Result<Node<K, V>, (Node<K, V>, ChildIndex)>>
     where
         K: Ord + Borrow<Q>,
         Q: Ord + ?Sized,
@@ -98,12 +98,12 @@ impl<K, V> Root<K, V> {
     }
 
     // Inserts a new node and returns Ok(the node inserted) or Err(old key-value entry).
-    pub fn insert_node(&mut self, key: K, value: V) -> Result<NodeRef<K, V>, (K, V)>
+    pub fn insert_node(&mut self, key: K, value: V) -> Result<Node<K, V>, (K, V)>
     where
         K: Ord,
     {
         if self.is_empty() {
-            let new_root = NodeRef::new(key, value);
+            let new_root = Node::new(key, value);
             self.root = Some(new_root);
             self.len += 1;
             return Ok(new_root);
@@ -117,7 +117,7 @@ impl<K, V> Root<K, V> {
                 Err((old_k, old_v))
             }
             Err((target, idx)) => {
-                let new_node = NodeRef::new(key, value);
+                let new_node = Node::new(key, value);
                 debug_assert!(target.child(idx).is_none());
 
                 unsafe {
@@ -153,7 +153,7 @@ impl<K, V> Root<K, V> {
         self.delete_node(to_remove)
     }
 
-    fn delete_node(&mut self, to_remove: NodeRef<K, V>) -> Option<(K, V)> {
+    fn delete_node(&mut self, to_remove: Node<K, V>) -> Option<(K, V)> {
         self.len -= 1;
 
         if Some(to_remove) == self.root && to_remove.children() == (None, None) {
@@ -254,35 +254,35 @@ impl<K, V> Root<K, V> {
     }
 }
 
-pub struct NodeRef<K, V>(NonNull<Node<K, V>>);
+pub struct Node<K, V>(NonNull<InnerNode<K, V>>);
 
-impl<K, V> fmt::Debug for NodeRef<K, V> {
+impl<K, V> fmt::Debug for Node<K, V> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("NodeRef").field(&self.0).finish()
     }
 }
 
-impl<K, V> Clone for NodeRef<K, V> {
+impl<K, V> Clone for Node<K, V> {
     fn clone(&self) -> Self {
         Self(self.0)
     }
 }
 
-impl<K, V> Copy for NodeRef<K, V> {}
+impl<K, V> Copy for Node<K, V> {}
 
-impl<K, V> PartialEq for NodeRef<K, V> {
+impl<K, V> PartialEq for Node<K, V> {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<K, V> Eq for NodeRef<K, V> {}
+impl<K, V> Eq for Node<K, V> {}
 
-impl<K, V> NodeRef<K, V> {
+impl<K, V> Node<K, V> {
     /// Constructs a new node of red-black tree with key and value. The node must be freed with [`deallocate`] after use.
     pub fn new(key: K, value: V) -> Self {
         let leaked = Box::leak(
-            Node {
+            InnerNode {
                 parent: None,
                 children: (None, None),
                 color: Color::Red,
@@ -291,7 +291,7 @@ impl<K, V> NodeRef<K, V> {
             }
             .into(),
         );
-        NodeRef(leaked.into())
+        Node(leaked.into())
     }
 
     /// Deallocates the node and extract its key-value pair. You must not use the `NodeRef` after calling this method.
@@ -539,7 +539,7 @@ impl<K, V> NodeRef<K, V> {
         }
     }
 
-    pub fn min_child(self) -> NodeRef<K, V> {
+    pub fn min_child(self) -> Node<K, V> {
         let mut current = self;
         while let Some(left) = current.left() {
             current = left;
@@ -547,7 +547,7 @@ impl<K, V> NodeRef<K, V> {
         current
     }
 
-    pub fn max_child(self) -> NodeRef<K, V> {
+    pub fn max_child(self) -> Node<K, V> {
         let mut current = self;
         while let Some(right) = current.right() {
             current = right;

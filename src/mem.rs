@@ -1,6 +1,6 @@
-use crate::node::NodeRef;
+use crate::node::Node;
 
-pub struct NodeDropGuard<K, V, const N: usize>(pub [NodeRef<K, V>; N]);
+pub struct NodeDropGuard<K, V, const N: usize>(pub [Node<K, V>; N]);
 
 impl<K, V, const N: usize> Drop for NodeDropGuard<K, V, N> {
     fn drop(&mut self) {

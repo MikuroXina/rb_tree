@@ -2,15 +2,15 @@ use std::{borrow, ops};
 
 use super::PreviousStep;
 use crate::{
-    node::{ChildIndex, NodeRef},
+    node::{ChildIndex, Node},
     RbTreeMap,
 };
 
 #[derive(Debug)]
 pub struct DyingLeafRange<K, V> {
-    start: Option<NodeRef<K, V>>,
+    start: Option<Node<K, V>>,
     start_prev: PreviousStep,
-    end: Option<NodeRef<K, V>>,
+    end: Option<Node<K, V>>,
     end_prev: PreviousStep,
 }
 
@@ -116,9 +116,9 @@ impl<K, V> DyingLeafRange<K, V> {
 
 #[derive(Debug)]
 pub struct RefLeafRange<K, V> {
-    start: Option<NodeRef<K, V>>,
+    start: Option<Node<K, V>>,
     start_prev: PreviousStep,
-    end: Option<NodeRef<K, V>>,
+    end: Option<Node<K, V>>,
     end_prev: PreviousStep,
 }
 
@@ -167,7 +167,7 @@ impl<K, V> RefLeafRange<K, V> {
         }
     }
 
-    pub fn cut_left(&mut self) -> Option<NodeRef<K, V>> {
+    pub fn cut_left(&mut self) -> Option<Node<K, V>> {
         while let Some(curr) = self.start {
             match self.start_prev {
                 PreviousStep::Parent => {
@@ -206,7 +206,7 @@ impl<K, V> RefLeafRange<K, V> {
         None
     }
 
-    pub fn cut_right(&mut self) -> Option<NodeRef<K, V>> {
+    pub fn cut_right(&mut self) -> Option<Node<K, V>> {
         while let Some(curr) = self.end {
             match self.end_prev {
                 PreviousStep::Parent => {
@@ -246,7 +246,7 @@ impl<K, V> RefLeafRange<K, V> {
     }
 }
 
-fn search_range<K, V, R, Q>(root: NodeRef<K, V>, range: R) -> Option<(NodeRef<K, V>, NodeRef<K, V>)>
+fn search_range<K, V, R, Q>(root: Node<K, V>, range: R) -> Option<(Node<K, V>, Node<K, V>)>
 where
     K: Ord + borrow::Borrow<Q>,
     Q: ?Sized + Ord,

@@ -1,6 +1,6 @@
 use super::PreviousStep;
 use crate::{
-    node::{ChildIndex, NodeRef, Root},
+    node::{ChildIndex, Node, Root},
     RbTreeMap,
 };
 
@@ -76,7 +76,7 @@ impl<K: Ord, V, F: FnMut(&K, &mut V) -> bool> FusedIterator for DrainFilter<'_, 
 pub(crate) struct DrainFilterNavigator<'a, K: 'a, V: 'a> {
     tree: &'a mut RbTreeMap<K, V>,
     root: Root<K, V>,
-    current: Option<NodeRef<K, V>>,
+    current: Option<Node<K, V>>,
     prev: PreviousStep,
     to_remove_keys: Vec<&'a K>,
     _phantom: PhantomData<(K, V)>,
