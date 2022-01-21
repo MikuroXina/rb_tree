@@ -246,10 +246,10 @@
 </pre><pre class="rust"><code><span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">mod</span> <span class="ident">tests</span>;
 
-<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::node</span>::{<span class="ident">ChildIndex</span>, <span class="ident">Color</span>, <span class="ident">NodeRef</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::node</span>::{<span class="ident">ChildIndex</span>, <span class="ident">Color</span>, <span class="ident">Node</span>};
 
-<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="ident">NodeRef</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">rotate</span>(<span class="self">self</span>, <span class="ident">pivot_idx</span>: <span class="ident">ChildIndex</span>, <span class="ident">root</span>: <span class="kw-2">&amp;mut</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="ident">NodeRef</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
+<span class="kw">impl</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> <span class="ident">Node</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">rotate</span>(<span class="self">self</span>, <span class="ident">pivot_idx</span>: <span class="ident">ChildIndex</span>, <span class="ident">root</span>: <span class="kw-2">&amp;mut</span> <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span>) -&gt; <span class="ident">Node</span><span class="op">&lt;</span><span class="ident">K</span>, <span class="ident">V</span><span class="op">&gt;</span> {
         <span class="comment">//           [target]</span>
         <span class="comment">//            /   \</span>
         <span class="comment">//        [pivot] [be_fallen]</span>
