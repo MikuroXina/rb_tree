@@ -33,7 +33,7 @@ impl std::ops::Not for ChildIndex {
     }
 }
 
-pub struct InnerNode<K, V> {
+struct InnerNode<K, V> {
     parent: Option<Node<K, V>>,
     #[allow(clippy::type_complexity)]
     children: (Option<Node<K, V>>, Option<Node<K, V>>),
