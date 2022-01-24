@@ -104,6 +104,9 @@ impl<K: Ord, V: Ord> Ord for RbTreeMap<K, V> {
     }
 }
 
+unsafe impl<K: Send, V: Send> Send for RbTreeMap<K, V> {}
+unsafe impl<K: Sync, V: Sync> Sync for RbTreeMap<K, V> {}
+
 impl<K, V> RbTreeMap<K, V> {
     /// Creates an empty `RbTreeMap`.
     ///
